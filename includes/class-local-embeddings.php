@@ -41,13 +41,13 @@ class WCAI_Local_Embeddings {
 			$sign  = ( $h & 1 ) ? 1.0 : -1.0;
 			$vec[ $idx ] += $sign;
 
-			// Character bigrams for partial matches.
-			$len = mb_strlen( $token );
+			// Character bigrams for partial matches (mbstring optional).
+			$len = self::str_len( $token );
 			for ( $i = 0; $i < $len - 1; $i++ ) {
-				$bg   = mb_substr( $token, $i, 2 );
-				$hb   = self::hash32( $bg );
-				$ib   = $hb % self::DIMS;
-				$sb   = ( $hb & 1 ) ? 0.5 : -0.5;
+				$bg  = self::str_sub( $token, $i, 2 );
+				$hb  = self::hash32( $bg );
+				$ib  = $hb % self::DIMS;
+				$sb  = ( $hb & 1 ) ? 0.5 : -0.5;
 				$vec[ $ib ] += $sb;
 			}
 		}
@@ -67,6 +67,34 @@ class WCAI_Local_Embeddings {
 			$out[] = self::embed( (string) $text );
 		}
 		return $out;
+	}
+
+	/**
+	 * Multibyte-safe string length.
+	 *
+	 * @param string $s Input.
+	 * @return int
+	 */
+	private static function str_len( string $s ): int {
+		if ( function_exists( 'mb_strlen' ) ) {
+			return (int) mb_strlen( $s );
+		}
+		return strlen( $s );
+	}
+
+	/**
+	 * Multibyte-safe substring.
+	 *
+	 * @param string $s Input.
+	 * @param int    $start Start.
+	 * @param int    $length Length.
+	 * @return string
+	 */
+	private static function str_sub( string $s, int $start, int $length ): string {
+		if ( function_exists( 'mb_substr' ) ) {
+			return (string) mb_substr( $s, $start, $length );
+		}
+		return (string) substr( $s, $start, $length );
 	}
 
 	/**

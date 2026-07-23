@@ -234,6 +234,8 @@
 
     function trackClick(productId) {
       if (!cfg.clickUrl || !productId) return;
+      var token = getSessionToken();
+      if (!lastQueryId || !token) return;
       fetch(cfg.clickUrl, {
         method: 'POST',
         credentials: 'same-origin',
@@ -243,8 +245,8 @@
         },
         body: JSON.stringify({
           product_id: productId,
-          query_id: lastQueryId || 0,
-          session_token: getSessionToken(),
+          query_id: lastQueryId,
+          session_token: token,
         }),
       }).catch(function () {});
     }

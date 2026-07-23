@@ -163,7 +163,8 @@ class WCAI_Retrieval {
 		}
 
 		if ( count( $rows ) < 10 ) {
-			$sql = "SELECT product_id, variation_id, title, price, stock_status, category_names, attributes_json, embedding, product_url
+			// Metadata only — avoid filesorting/loading LONGBLOB embeddings in the first pass.
+			$sql = "SELECT id, product_id, variation_id, title, price, stock_status, category_names, attributes_json, product_url
 				FROM {$table}
 				WHERE {$where_sql}
 				ORDER BY last_indexed_at DESC
@@ -171,24 +172,45 @@ class WCAI_Retrieval {
 			$bind = array_merge( $params, array( $limit ) );
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$prepared = $wpdb->prepare( $sql, $bind );
+			$fallback = array();
 			if ( $prepared ) {
 				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				$fallback = $wpdb->get_results( $prepared, ARRAY_A ) ?: array();
-				if ( empty( $rows ) ) {
-					$rows = $fallback;
-				} else {
-					$seen = array();
-					foreach ( $rows as $r ) {
-						$seen[ $r['product_id'] . ':' . $r['variation_id'] ] = true;
+				$meta_rows = $wpdb->get_results( $prepared, ARRAY_A ) ?: array();
+				$ids       = array_filter( array_map( 'intval', array_column( $meta_rows, 'id' ) ) );
+				$emb_map   = array();
+				if ( $ids ) {
+					$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+					$emb_sql      = "SELECT id, embedding FROM {$table} WHERE id IN ({$placeholders})";
+					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$emb_prepared = $wpdb->prepare( $emb_sql, $ids );
+					if ( $emb_prepared ) {
+						// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+						foreach ( ( $wpdb->get_results( $emb_prepared, ARRAY_A ) ?: array() ) as $erow ) {
+							$emb_map[ (int) $erow['id'] ] = $erow['embedding'];
+						}
 					}
-					foreach ( $fallback as $r ) {
-						$key = $r['product_id'] . ':' . $r['variation_id'];
-						if ( empty( $seen[ $key ] ) ) {
-							$rows[] = $r;
-						}
-						if ( count( $rows ) >= $limit ) {
-							break;
-						}
+				}
+				foreach ( $meta_rows as $r ) {
+					$rid = (int) $r['id'];
+					$r['embedding'] = $emb_map[ $rid ] ?? null;
+					unset( $r['id'] );
+					$fallback[] = $r;
+				}
+			}
+			if ( empty( $rows ) ) {
+				$rows = $fallback;
+			} else {
+				$seen = array();
+				foreach ( $rows as $r ) {
+					$seen[ $r['product_id'] . ':' . $r['variation_id'] ] = true;
+				}
+				foreach ( $fallback as $r ) {
+					$key = $r['product_id'] . ':' . $r['variation_id'];
+					if ( empty( $seen[ $key ] ) ) {
+						$rows[] = $r;
+					}
+					if ( count( $rows ) >= $limit ) {
+						break;
 					}
 				}
 			}

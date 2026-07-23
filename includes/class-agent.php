@@ -244,6 +244,18 @@ class WCAI_Agent {
 			return null;
 		}
 
+		// Prefer checking the parent for visibility when recommending a variation.
+		$check = $product;
+		if ( $product->get_parent_id() ) {
+			$parent = wc_get_product( $product->get_parent_id() );
+			if ( $parent ) {
+				$check = $parent;
+			}
+		}
+		if ( ! WCAI_Indexer::is_indexable_product( $check ) ) {
+			return null;
+		}
+
 		$parent_id = $product->get_parent_id();
 		$status_id = $parent_id ? $parent_id : $product_id;
 		if ( 'publish' !== get_post_status( $status_id ) ) {

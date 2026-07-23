@@ -1,6 +1,6 @@
 <?php
 /**
- * Public API helpers (webhook).
+ * Optional outbound webhook for query events.
  *
  * @package WCAI
  */
@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Optional outbound webhook for query events.
+ * Public API helpers (webhook).
  */
 class WCAI_Public_API {
 
@@ -19,7 +19,7 @@ class WCAI_Public_API {
 	 */
 	public static function maybe_send_webhook( array $payload ): void {
 		$url = trim( (string) WCAI_Settings::get( 'webhook_url', '' ) );
-		if ( '' === $url || ! wp_http_validate_url( $url ) ) {
+		if ( '' === $url || ! wp_http_validate_url( $url ) || WCAI_Installer::is_blocked_url( $url ) ) {
 			return;
 		}
 
@@ -37,7 +37,7 @@ class WCAI_Public_API {
 			'timestamp'     => gmdate( 'c' ),
 		);
 
-		wp_remote_post(
+		wp_safe_remote_post(
 			$url,
 			array(
 				'timeout'  => 5,

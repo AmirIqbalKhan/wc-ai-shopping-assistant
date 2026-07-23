@@ -3,7 +3,7 @@
  * Plugin Name:       WooCommerce AI Shopping Assistant
  * Plugin URI:        https://github.com/AmirIqbalKhan/wc-ai-shopping-assistant
  * Description:       Conversational, natural-language product finder for WooCommerce stores.
- * Version:           0.3.1
+ * Version:           0.3.2
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Aamir Iqbal Khan
@@ -19,7 +19,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WCAI_VERSION', '0.3.1' );
+define( 'WCAI_VERSION', '0.3.2' );
 define( 'WCAI_PLUGIN_FILE', __FILE__ );
 define( 'WCAI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WCAI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -43,6 +43,22 @@ function wcai_autoload( string $class ): void {
 	}
 }
 spl_autoload_register( 'wcai_autoload' );
+
+// Critical classes used during settings save / reindex — load eagerly.
+require_once WCAI_PLUGIN_DIR . 'includes/class-providers.php';
+require_once WCAI_PLUGIN_DIR . 'includes/class-local-embeddings.php';
+require_once WCAI_PLUGIN_DIR . 'includes/class-installer.php';
+require_once WCAI_PLUGIN_DIR . 'includes/class-usage.php';
+
+/**
+ * Declare WooCommerce feature compatibility before WC init.
+ */
+function wcai_declare_wc_compatibility(): void {
+	if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', WCAI_PLUGIN_FILE, true );
+	}
+}
+add_action( 'before_woocommerce_init', 'wcai_declare_wc_compatibility' );
 
 /**
  * Check environment requirements.
@@ -90,5 +106,6 @@ function wcai_init(): void {
 	WCAI_Widget::init();
 	WCAI_Analytics::init();
 	WCAI_Insights::init();
+	WCAI_Privacy::init();
 }
 add_action( 'plugins_loaded', 'wcai_init' );

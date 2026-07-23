@@ -8,9 +8,11 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Persists anonymized query and click events.
+ * Persists query and click events with retention.
  */
 class WCAI_Analytics {
+
+	const RETENTION_DAYS = 90;
 
 	/**
 	 * Hook admin page.
@@ -36,53 +38,129 @@ class WCAI_Analytics {
 	/**
 	 * Log a query event.
 	 *
-	 * @param string   $query          Query text.
-	 * @param string   $session_token  Session.
-	 * @param int      $result_count   Products returned.
-	 * @param bool     $matched        Whether strong matches existed.
-	 * @param float|null $confidence   Best similarity score.
+	 * @param string     $query          Query text.
+	 * @param string     $session_token  Session.
+	 * @param int        $result_count   Products returned.
+	 * @param bool       $matched        Whether strong matches existed.
+	 * @param float|null $confidence     Best similarity score.
+	 * @param int[]      $product_ids    Result product IDs.
 	 * @return int Insert ID.
 	 */
-	public static function log_query( string $query, string $session_token, int $result_count, bool $matched, ?float $confidence = null ): int {
+	public static function log_query( string $query, string $session_token, int $result_count, bool $matched, ?float $confidence = null, array $product_ids = array() ): int {
 		global $wpdb;
 		$table = WCAI_Installer::query_log_table();
+
+		$ids = array_values( array_unique( array_map( 'intval', $product_ids ) ) );
 
 		$wpdb->insert(
 			$table,
 			array(
-				'session_token' => $session_token ? substr( $session_token, 0, 64 ) : null,
-				'query_text'    => mb_substr( $query, 0, 500 ),
-				'query_hash'    => md5( strtolower( trim( $query ) ) ),
-				'result_count'  => $result_count,
-				'matched'       => $matched ? 1 : 0,
-				'confidence'    => $confidence,
-				'created_at'    => current_time( 'mysql', true ),
+				'session_token'      => $session_token ? substr( $session_token, 0, 64 ) : null,
+				'query_text'         => function_exists( 'mb_substr' ) ? mb_substr( $query, 0, 500 ) : substr( $query, 0, 500 ),
+				'query_hash'         => md5( strtolower( trim( $query ) ) ),
+				'result_count'       => $result_count,
+				'result_product_ids' => wp_json_encode( $ids ),
+				'matched'            => $matched ? 1 : 0,
+				'confidence'         => $confidence,
+				'created_at'         => current_time( 'mysql', true ),
 			),
-			array( '%s', '%s', '%s', '%d', '%d', '%f', '%s' )
+			array( '%s', '%s', '%s', '%d', '%s', '%d', '%f', '%s' )
 		);
 
 		return (int) $wpdb->insert_id;
 	}
 
 	/**
-	 * Log a product card click.
+	 * Log a product card click with validation.
 	 *
 	 * @param int    $product_id Product ID.
 	 * @param int    $query_id   Related query log ID.
 	 * @param string $session    Session token.
+	 * @return true|WP_Error|'duplicate'
 	 */
-	public static function log_click( int $product_id, int $query_id = 0, string $session = '' ): void {
+	public static function log_click( int $product_id, int $query_id = 0, string $session = '' ) {
 		global $wpdb;
-		$wpdb->insert(
-			WCAI_Installer::click_log_table(),
+
+		if ( ! $product_id || ! $query_id || '' === $session ) {
+			return new WP_Error(
+				'wcai_click_invalid',
+				__( 'Click requires product_id, query_id, and session_token.', 'wc-ai-shopping-assistant' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$qtable = WCAI_Installer::query_log_table();
+		$row    = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT id, session_token, result_product_ids FROM {$qtable} WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$query_id
+			),
+			ARRAY_A
+		);
+
+		if ( ! $row ) {
+			return new WP_Error( 'wcai_click_unknown_query', __( 'Unknown query.', 'wc-ai-shopping-assistant' ), array( 'status' => 403 ) );
+		}
+
+		if ( (string) ( $row['session_token'] ?? '' ) !== substr( $session, 0, 64 ) ) {
+			return new WP_Error( 'wcai_click_session', __( 'Session does not match query.', 'wc-ai-shopping-assistant' ), array( 'status' => 403 ) );
+		}
+
+		$allowed = json_decode( (string) ( $row['result_product_ids'] ?? '[]' ), true );
+		if ( ! is_array( $allowed ) ) {
+			$allowed = array();
+		}
+		$allowed = array_map( 'intval', $allowed );
+		if ( ! in_array( $product_id, $allowed, true ) ) {
+			return new WP_Error( 'wcai_click_product', __( 'Product was not in query results.', 'wc-ai-shopping-assistant' ), array( 'status' => 403 ) );
+		}
+
+		$ctable = WCAI_Installer::click_log_table();
+		$exists = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$ctable} WHERE query_id = %d AND product_id = %d LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$query_id,
+				$product_id
+			)
+		);
+		if ( $exists ) {
+			return 'duplicate';
+		}
+
+		$ok = $wpdb->insert(
+			$ctable,
 			array(
-				'query_id'      => $query_id ?: null,
+				'query_id'      => $query_id,
 				'product_id'    => $product_id,
-				'session_token' => $session ? substr( $session, 0, 64 ) : null,
+				'session_token' => substr( $session, 0, 64 ),
 				'created_at'    => current_time( 'mysql', true ),
 			),
 			array( '%d', '%d', '%s', '%s' )
 		);
+
+		if ( false === $ok ) {
+			// Unique race → treat as duplicate.
+			if ( false !== strpos( (string) $wpdb->last_error, 'Duplicate' ) ) {
+				return 'duplicate';
+			}
+			return new WP_Error( 'wcai_click_db', __( 'Could not log click.', 'wc-ai-shopping-assistant' ), array( 'status' => 500 ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Delete analytics older than retention window.
+	 */
+	public static function cleanup_retention(): void {
+		global $wpdb;
+		$since  = gmdate( 'Y-m-d H:i:s', time() - self::RETENTION_DAYS * DAY_IN_SECONDS );
+		$qtable = WCAI_Installer::query_log_table();
+		$ctable = WCAI_Installer::click_log_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$ctable} WHERE created_at < %s", $since ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$qtable} WHERE created_at < %s", $since ) );
 	}
 
 	/**
@@ -105,7 +183,10 @@ class WCAI_Analytics {
 		);
 		$clicks = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$ctable} WHERE created_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT COUNT(*) FROM {$ctable} c
+				INNER JOIN {$qtable} q ON q.id = c.query_id
+				WHERE c.created_at >= %s AND q.created_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$since,
 				$since
 			)
 		);
@@ -145,7 +226,6 @@ class WCAI_Analytics {
 		global $wpdb;
 		$qtable = WCAI_Installer::query_log_table();
 		$since  = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
-
 		return $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT query_text, COUNT(*) AS cnt FROM {$qtable} WHERE created_at >= %s AND matched = 0 GROUP BY query_hash ORDER BY cnt DESC LIMIT 30", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -156,55 +236,34 @@ class WCAI_Analytics {
 	}
 
 	/**
-	 * Render analytics admin page.
+	 * Render analytics page.
 	 */
 	public static function render_page(): void {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
-		$days  = isset( $_GET['days'] ) ? max( 1, min( 90, absint( $_GET['days'] ) ) ) : 30; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$stats = self::stats( $days );
-		$used  = WCAI_Usage::used();
-		$cap   = WCAI_Usage::monthly_cap();
+		$stats = self::stats( 30 );
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'AI Assistant Analytics', 'wc-ai-shopping-assistant' ); ?></h1>
-			<p>
-				<?php
-				printf(
-					/* translators: 1: used 2: cap */
-					esc_html__( 'Plan usage this month: %1$d / %2$d queries', 'wc-ai-shopping-assistant' ),
-					$used,
-					$cap
-				);
-				?>
-			</p>
-			<p>
-				<a class="button" href="<?php echo esc_url( add_query_arg( array( 'page' => 'wcai-analytics', 'days' => 7 ), admin_url( 'admin.php' ) ) ); ?>">7 <?php esc_html_e( 'days', 'wc-ai-shopping-assistant' ); ?></a>
-				<a class="button" href="<?php echo esc_url( add_query_arg( array( 'page' => 'wcai-analytics', 'days' => 30 ), admin_url( 'admin.php' ) ) ); ?>">30 <?php esc_html_e( 'days', 'wc-ai-shopping-assistant' ); ?></a>
-			</p>
-			<table class="widefat striped" style="max-width:640px">
-				<tbody>
-					<tr><th><?php esc_html_e( 'Queries', 'wc-ai-shopping-assistant' ); ?></th><td><?php echo (int) $stats['queries']; ?></td></tr>
-					<tr><th><?php esc_html_e( 'Product clicks', 'wc-ai-shopping-assistant' ); ?></th><td><?php echo (int) $stats['clicks']; ?></td></tr>
-					<tr><th><?php esc_html_e( 'Click-through rate', 'wc-ai-shopping-assistant' ); ?></th><td><?php echo esc_html( (string) $stats['ctr'] ); ?>%</td></tr>
-					<tr><th><?php esc_html_e( 'Unmatched queries', 'wc-ai-shopping-assistant' ); ?></th><td><?php echo (int) $stats['unmatched']; ?></td></tr>
-				</tbody>
-			</table>
-			<h2><?php esc_html_e( 'Top queries', 'wc-ai-shopping-assistant' ); ?></h2>
+			<h1><?php echo esc_html__( 'AI Analytics', 'wc-ai-shopping-assistant' ); ?></h1>
+			<p><?php echo esc_html__( 'Last 30 days. Query text is retained for 90 days then deleted automatically.', 'wc-ai-shopping-assistant' ); ?></p>
+			<ul>
+				<li><?php printf( /* translators: %d: count */ esc_html__( 'Queries: %d', 'wc-ai-shopping-assistant' ), (int) $stats['queries'] ); ?></li>
+				<li><?php printf( /* translators: %d: count */ esc_html__( 'Validated clicks: %d', 'wc-ai-shopping-assistant' ), (int) $stats['clicks'] ); ?></li>
+				<li><?php printf( /* translators: %s: percent */ esc_html__( 'CTR: %s%%', 'wc-ai-shopping-assistant' ), esc_html( (string) $stats['ctr'] ) ); ?></li>
+				<li><?php printf( /* translators: %d: count */ esc_html__( 'Unmatched: %d', 'wc-ai-shopping-assistant' ), (int) $stats['unmatched'] ); ?></li>
+				<li><?php printf( /* translators: 1: used 2: cap */ esc_html__( 'Monthly usage: %1$d / %2$d', 'wc-ai-shopping-assistant' ), (int) WCAI_Usage::used(), (int) WCAI_Usage::monthly_cap() ); ?></li>
+			</ul>
+			<h2><?php echo esc_html__( 'Top queries', 'wc-ai-shopping-assistant' ); ?></h2>
 			<table class="widefat striped">
-				<thead><tr><th><?php esc_html_e( 'Query', 'wc-ai-shopping-assistant' ); ?></th><th><?php esc_html_e( 'Count', 'wc-ai-shopping-assistant' ); ?></th></tr></thead>
+				<thead><tr><th><?php echo esc_html__( 'Query', 'wc-ai-shopping-assistant' ); ?></th><th><?php echo esc_html__( 'Count', 'wc-ai-shopping-assistant' ); ?></th></tr></thead>
 				<tbody>
-				<?php if ( empty( $stats['top'] ) ) : ?>
-					<tr><td colspan="2"><?php esc_html_e( 'No queries yet.', 'wc-ai-shopping-assistant' ); ?></td></tr>
-				<?php else : ?>
-					<?php foreach ( $stats['top'] as $row ) : ?>
-						<tr>
-							<td><?php echo esc_html( $row['query_text'] ); ?></td>
-							<td><?php echo (int) $row['cnt']; ?></td>
-						</tr>
-					<?php endforeach; ?>
-				<?php endif; ?>
+				<?php foreach ( $stats['top'] as $row ) : ?>
+					<tr>
+						<td><?php echo esc_html( $row['query_text'] ); ?></td>
+						<td><?php echo esc_html( (string) $row['cnt'] ); ?></td>
+					</tr>
+				<?php endforeach; ?>
 				</tbody>
 			</table>
 		</div>

@@ -34,6 +34,7 @@ class WCAI_Hooks {
 
 		add_action( 'wcai_cleanup_rate_limits', array( 'WCAI_REST', 'cleanup_rate_limits' ) );
 		add_action( 'wcai_cleanup_sessions', array( 'WCAI_Session', 'cleanup' ) );
+		add_action( 'wcai_cleanup_analytics', array( 'WCAI_Analytics', 'cleanup_retention' ) );
 	}
 
 	/**
@@ -58,10 +59,9 @@ class WCAI_Hooks {
 			return;
 		}
 
-		as_enqueue_async_action(
+		WCAI_Indexer::enqueue_action(
 			WCAI_Indexer::ACTION_INDEX_ONE,
-			array( 'product_id' => $product_id ),
-			'wcai'
+			array( 'product_id' => $product_id )
 		);
 	}
 
@@ -141,10 +141,9 @@ class WCAI_Hooks {
 			return;
 		}
 
-		as_enqueue_async_action(
+		WCAI_Indexer::enqueue_action(
 			WCAI_Indexer::ACTION_STOCK_UPDATE,
-			array( 'product_id' => $product_id ),
-			'wcai'
+			array( 'product_id' => $product_id )
 		);
 	}
 
@@ -159,10 +158,9 @@ class WCAI_Hooks {
 			return;
 		}
 
-		as_enqueue_async_action(
+		WCAI_Indexer::enqueue_action(
 			WCAI_Indexer::ACTION_REMOVE_ONE,
-			array( 'product_id' => $post_id ),
-			'wcai'
+			array( 'product_id' => $post_id )
 		);
 	}
 

@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Registers /wcai/v1 routes and rate limiting.
+ * Registers /wcai/v1 routes and durable rate limiting.
  */
 class WCAI_REST {
 
@@ -31,7 +31,7 @@ class WCAI_REST {
 				'callback'            => array( __CLASS__, 'handle_query' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'query' => array(
+					'query'         => array(
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
@@ -53,17 +53,18 @@ class WCAI_REST {
 				'callback'            => array( __CLASS__, 'handle_click' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'product_id' => array(
+					'product_id'    => array(
 						'required' => true,
 						'type'     => 'integer',
 					),
-					'query_id' => array(
-						'required' => false,
+					'query_id'      => array(
+						'required' => true,
 						'type'     => 'integer',
 					),
 					'session_token' => array(
-						'required' => false,
-						'type'     => 'string',
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
 					),
 				),
 			)
@@ -76,6 +77,18 @@ class WCAI_REST {
 				'methods'             => array( 'GET', 'POST' ),
 				'callback'            => array( __CLASS__, 'handle_public_search' ),
 				'permission_callback' => array( __CLASS__, 'public_search_permission' ),
+				'args'                => array(
+					'query' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'q'     => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
 			)
 		);
 
@@ -85,6 +98,18 @@ class WCAI_REST {
 			array(
 				'methods'             => 'GET',
 				'callback'            => array( __CLASS__, 'handle_reindex_status' ),
+				'permission_callback' => static function () {
+					return current_user_can( 'manage_woocommerce' );
+				},
+			)
+		);
+
+		register_rest_route(
+			'wcai/v1',
+			'/test-connection',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'handle_test_connection' ),
 				'permission_callback' => static function () {
 					return current_user_can( 'manage_woocommerce' );
 				},
@@ -125,7 +150,7 @@ class WCAI_REST {
 			return $limit_check;
 		}
 
-		$usage = WCAI_Usage::assert_allowed();
+		$usage = WCAI_Usage::assert_allowed( 'query' );
 		if ( is_wp_error( $usage ) ) {
 			return $usage;
 		}
@@ -139,7 +164,8 @@ class WCAI_REST {
 		}
 
 		$query = trim( (string) $request->get_param( 'query' ) );
-		if ( '' === $query || mb_strlen( $query ) > 500 ) {
+		$len   = function_exists( 'mb_strlen' ) ? mb_strlen( $query ) : strlen( $query );
+		if ( '' === $query || $len > 500 ) {
 			return new WP_Error(
 				'wcai_bad_query',
 				__( 'Please enter a query between 1 and 500 characters.', 'wc-ai-shopping-assistant' ),
@@ -169,19 +195,26 @@ class WCAI_REST {
 		foreach ( $candidates as $c ) {
 			$best = max( $best, (float) ( $c['score'] ?? 0 ) );
 		}
-		$matched  = ! empty( $result['products'] );
-		$query_id = WCAI_Analytics::log_query(
+		$matched     = ! empty( $result['products'] );
+		$product_ids = array_map(
+			static function ( $p ) {
+				return (int) ( $p['id'] ?? 0 );
+			},
+			$result['products'] ?? array()
+		);
+		$query_id    = WCAI_Analytics::log_query(
 			$query,
 			$session['session_token'],
 			count( $result['products'] ?? array() ),
 			$matched,
-			$candidates ? $best : null
+			$candidates ? $best : null,
+			$product_ids
 		);
 
 		$constraints = is_array( $result['constraints'] ?? null ) ? $result['constraints'] : array();
 		$session     = WCAI_Session::after_turn( $session, $query, $result, $constraints );
 
-		WCAI_Usage::increment();
+		WCAI_Usage::increment( 'query' );
 
 		$payload = array(
 			'session_token'       => $session['session_token'],
@@ -205,15 +238,27 @@ class WCAI_REST {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public static function handle_click( WP_REST_Request $request ) {
-		$product_id = absint( $request->get_param( 'product_id' ) );
-		if ( ! $product_id ) {
-			return new WP_Error( 'wcai_bad_product', __( 'Invalid product.', 'wc-ai-shopping-assistant' ), array( 'status' => 400 ) );
+		$limit_check = self::check_rate_limit( 'click' );
+		if ( is_wp_error( $limit_check ) ) {
+			return $limit_check;
 		}
-		WCAI_Analytics::log_click(
-			$product_id,
-			absint( $request->get_param( 'query_id' ) ),
-			(string) $request->get_param( 'session_token' )
-		);
+
+		$product_id = absint( $request->get_param( 'product_id' ) );
+		$query_id   = absint( $request->get_param( 'query_id' ) );
+		$session    = (string) $request->get_param( 'session_token' );
+
+		$result = WCAI_Analytics::log_click( $product_id, $query_id, $session );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		if ( 'duplicate' === $result ) {
+			return rest_ensure_response(
+				array(
+					'ok'        => true,
+					'duplicate' => true,
+				)
+			);
+		}
 		return rest_ensure_response( array( 'ok' => true ) );
 	}
 
@@ -224,14 +269,24 @@ class WCAI_REST {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public static function handle_public_search( WP_REST_Request $request ) {
-		$usage = WCAI_Usage::assert_allowed();
+		$limit_check = self::check_rate_limit( 'search' );
+		if ( is_wp_error( $limit_check ) ) {
+			return $limit_check;
+		}
+
+		$usage = WCAI_Usage::assert_allowed( 'query' );
 		if ( is_wp_error( $usage ) ) {
 			return $usage;
 		}
 
 		$query = trim( (string) ( $request->get_param( 'query' ) ?: $request->get_param( 'q' ) ) );
-		if ( '' === $query ) {
-			return new WP_Error( 'wcai_bad_query', __( 'Query required.', 'wc-ai-shopping-assistant' ), array( 'status' => 400 ) );
+		$len   = function_exists( 'mb_strlen' ) ? mb_strlen( $query ) : strlen( $query );
+		if ( '' === $query || $len > 500 ) {
+			return new WP_Error(
+				'wcai_bad_query',
+				__( 'Please enter a query between 1 and 500 characters.', 'wc-ai-shopping-assistant' ),
+				array( 'status' => 400 )
+			);
 		}
 
 		$session = array(
@@ -252,13 +307,53 @@ class WCAI_REST {
 			return $result;
 		}
 
-		WCAI_Usage::increment();
-		WCAI_Analytics::log_query( $query, 'api', count( $result['products'] ?? array() ), ! empty( $result['products'] ), null );
+		$product_ids = array_map(
+			static function ( $p ) {
+				return (int) ( $p['id'] ?? 0 );
+			},
+			$result['products'] ?? array()
+		);
+
+		WCAI_Usage::increment( 'query' );
+		WCAI_Analytics::log_query( $query, 'api', count( $result['products'] ?? array() ), ! empty( $result['products'] ), null, $product_ids );
 
 		return rest_ensure_response(
 			array(
 				'reply_text' => $result['reply_text'] ?? '',
 				'products'   => $result['products'] ?? array(),
+			)
+		);
+	}
+
+	/**
+	 * Admin connection test.
+	 *
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function handle_test_connection() {
+		if ( ! WCAI_Settings::get( 'api_key' ) ) {
+			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'wc-ai-shopping-assistant' ), array( 'status' => 400 ) );
+		}
+		$result = WCAI_OpenAI_Client::chat_json(
+			array(
+				array(
+					'role'    => 'user',
+					'content' => 'Reply with JSON only: {"ok":true}',
+				),
+			)
+		);
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error(
+				$result->get_error_code(),
+				$result->get_error_message(),
+				array( 'status' => 502 )
+			);
+		}
+		return rest_ensure_response(
+			array(
+				'ok'       => true,
+				'provider' => WCAI_OpenAI_Client::provider(),
+				'api_base' => WCAI_OpenAI_Client::api_base(),
 			)
 		);
 	}
@@ -286,45 +381,51 @@ class WCAI_REST {
 	}
 
 	/**
-	 * Per-IP (anon) or per-user rate limit.
+	 * Durable per-IP (anon) or per-user rate limit via custom table.
 	 *
+	 * @param string $bucket Optional bucket suffix.
 	 * @return true|WP_Error
 	 */
-	private static function check_rate_limit() {
+	private static function check_rate_limit( string $bucket = 'query' ) {
+		global $wpdb;
+
 		if ( is_user_logged_in() ) {
 			$limit = (int) WCAI_Settings::get( 'rate_limit_user', 60 );
-			$key   = 'wcai_rl_u_' . get_current_user_id();
+			$key   = 'u_' . get_current_user_id() . '_' . $bucket;
 		} else {
 			$limit = (int) WCAI_Settings::get( 'rate_limit_anon', WCAI_Settings::get( 'rate_limit_per_min', 20 ) );
-			$key   = 'wcai_rl_a_' . md5( self::client_ip() );
+			$key   = 'a_' . md5( self::client_ip() ) . '_' . $bucket;
 		}
 
-		$data = get_transient( $key );
-		if ( ! is_array( $data ) ) {
-			$data = array(
-				'count' => 0,
-				'start' => time(),
-			);
-		}
+		$table = WCAI_Installer::rate_limits_table();
+		$now   = time();
+		$start = $now;
 
-		if ( ( time() - (int) $data['start'] ) >= MINUTE_IN_SECONDS ) {
-			$data = array(
-				'count' => 0,
-				'start' => time(),
-			);
-		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$table} (rate_key, window_start, hit_count) VALUES (%s, %d, 1)
+				ON DUPLICATE KEY UPDATE
+					hit_count = IF( ( %d - window_start ) >= %d, 1, hit_count + 1 ),
+					window_start = IF( ( %d - window_start ) >= %d, %d, window_start )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$key,
+				$start,
+				$now,
+				MINUTE_IN_SECONDS,
+				$now,
+				MINUTE_IN_SECONDS,
+				$now
+			)
+		);
 
-		$data['count'] = (int) $data['count'] + 1;
-		set_transient( $key, $data, MINUTE_IN_SECONDS );
+		$count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT hit_count FROM {$table} WHERE rate_key = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$key
+			)
+		);
 
-		$keys = get_option( 'wcai_rate_limit_keys', array() );
-		if ( ! is_array( $keys ) ) {
-			$keys = array();
-		}
-		$keys[ $key ] = time();
-		update_option( 'wcai_rate_limit_keys', $keys, false );
-
-		if ( $data['count'] > $limit ) {
+		if ( $count > $limit ) {
 			return new WP_Error(
 				'wcai_rate_limited',
 				__( 'Too many requests. Please wait a moment and try again.', 'wc-ai-shopping-assistant' ),
@@ -336,7 +437,7 @@ class WCAI_REST {
 	}
 
 	/**
-	 * Best-effort client IP.
+	 * Best-effort client IP (REMOTE_ADDR only).
 	 *
 	 * @return string
 	 */
@@ -346,23 +447,14 @@ class WCAI_REST {
 	}
 
 	/**
-	 * Prune stale rate-limit key tracking option.
+	 * Prune stale rate-limit rows.
 	 */
 	public static function cleanup_rate_limits(): void {
-		$keys = get_option( 'wcai_rate_limit_keys', array() );
-		if ( ! is_array( $keys ) ) {
-			return;
-		}
-
-		$now     = time();
-		$trimmed = array();
-		foreach ( $keys as $key => $ts ) {
-			if ( ( $now - (int) $ts ) < HOUR_IN_SECONDS ) {
-				$trimmed[ $key ] = $ts;
-			} else {
-				delete_transient( $key );
-			}
-		}
-		update_option( 'wcai_rate_limit_keys', $trimmed, false );
+		global $wpdb;
+		$table = WCAI_Installer::rate_limits_table();
+		$cut   = time() - ( 2 * HOUR_IN_SECONDS );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE window_start < %d", $cut ) );
+		delete_option( 'wcai_rate_limit_keys' );
 	}
 }

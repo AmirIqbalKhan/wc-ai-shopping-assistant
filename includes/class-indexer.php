@@ -36,9 +36,63 @@ class WCAI_Indexer {
 	}
 
 	/**
-	 * Queue a full catalog reindex in batches.
+	 * Enqueue an Action Scheduler job safely.
+	 *
+	 * @param string $hook Hook name.
+	 * @param array  $args Args.
+	 * @return bool True if queued.
 	 */
-	public static function queue_full_reindex(): void {
+	public static function enqueue_action( string $hook, array $args = array() ): bool {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			return false;
+		}
+		as_enqueue_async_action( $hook, $args, 'wcai' );
+		return true;
+	}
+
+	/**
+	 * Whether a product should be indexed for shoppers.
+	 *
+	 * @param WC_Product $product Product.
+	 * @return bool
+	 */
+	public static function is_indexable_product( $product ): bool {
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+
+		$status = $product->get_status();
+		if ( 'publish' !== $status ) {
+			return false;
+		}
+
+		$post = get_post( $product->get_id() );
+		if ( $post && ! empty( $post->post_password ) ) {
+			return false;
+		}
+
+		$visibility = $product->get_catalog_visibility();
+		if ( 'hidden' === $visibility ) {
+			return false;
+		}
+
+		if ( ! $product->is_visible() ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Queue a full catalog reindex in batches.
+	 *
+	 * @return bool False if Action Scheduler is unavailable.
+	 */
+	public static function queue_full_reindex(): bool {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			return false;
+		}
+
 		$ids = get_posts(
 			array(
 				'post_type'              => 'product',
@@ -61,7 +115,7 @@ class WCAI_Indexer {
 				),
 				false
 			);
-			return;
+			return true;
 		}
 
 		$ids    = array_map( 'intval', $ids );
@@ -78,12 +132,13 @@ class WCAI_Indexer {
 		);
 
 		foreach ( $chunks as $chunk ) {
-			as_enqueue_async_action(
+			self::enqueue_action(
 				self::ACTION_REINDEX_BATCH,
-				array( 'product_ids' => $chunk ),
-				'wcai'
+				array( 'product_ids' => $chunk )
 			);
 		}
+
+		return true;
 	}
 
 	/**
@@ -164,7 +219,7 @@ class WCAI_Indexer {
 		}
 
 		$product = wc_get_product( $product_id );
-		if ( ! $product || 'publish' !== get_post_status( $product_id ) ) {
+		if ( ! $product || ! self::is_indexable_product( $product ) ) {
 			self::remove_product( $product_id );
 			return;
 		}
@@ -232,7 +287,10 @@ class WCAI_Indexer {
 	public static function build_variation_payload( int $product_id, int $variation_id ): ?array {
 		$variation = wc_get_product( $variation_id );
 		$parent    = wc_get_product( $product_id );
-		if ( ! $variation || ! $parent ) {
+		if ( ! $variation || ! $parent || ! self::is_indexable_product( $parent ) ) {
+			return null;
+		}
+		if ( 'private' === $variation->get_status() ) {
 			return null;
 		}
 
@@ -313,7 +371,7 @@ class WCAI_Indexer {
 		}
 
 		$status_id = $product_id;
-		if ( 'publish' !== get_post_status( $status_id ) ) {
+		if ( ! self::is_indexable_product( $product ) ) {
 			self::remove_product( $product_id );
 			return;
 		}
@@ -357,7 +415,7 @@ class WCAI_Indexer {
 		}
 
 		$product = wc_get_product( $product_id );
-		if ( ! $product || 'publish' !== get_post_status( $product_id ) ) {
+		if ( ! $product || ! self::is_indexable_product( $product ) ) {
 			return null;
 		}
 

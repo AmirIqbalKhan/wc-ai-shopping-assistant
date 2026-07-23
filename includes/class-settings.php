@@ -28,7 +28,8 @@ class WCAI_Settings {
 	 *
 	 * @param string $hook Hook.
 	 */
-	public static function enqueue_admin( string $hook ): void {
+	public static function enqueue_admin( $hook ): void {
+		$hook = is_string( $hook ) ? $hook : '';
 		if ( false === strpos( $hook, 'wcai-settings' ) ) {
 			return;
 		}
@@ -39,13 +40,15 @@ class WCAI_Settings {
 			WCAI_VERSION,
 			true
 		);
+		$providers = class_exists( 'WCAI_Providers' ) ? WCAI_Providers::all() : array();
 		wp_localize_script(
 			'wcai-admin',
 			'wcaiAdmin',
 			array(
 				'statusUrl' => esc_url_raw( rest_url( 'wcai/v1/reindex-status' ) ),
+				'testUrl'   => esc_url_raw( rest_url( 'wcai/v1/test-connection' ) ),
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
-				'providers' => WCAI_Providers::all(),
+				'providers' => $providers,
 			)
 		);
 	}
@@ -144,9 +147,21 @@ class WCAI_Settings {
 
 		$caps = WCAI_Usage::plan_caps();
 
+		$submitted_key = isset( $input['api_key'] ) ? sanitize_text_field( (string) $input['api_key'] ) : '';
+		$api_key       = '' !== $submitted_key ? $submitted_key : (string) ( $current['api_key'] ?? '' );
+
+		$webhook = isset( $input['webhook_url'] ) ? esc_url_raw( (string) $input['webhook_url'] ) : ( $current['webhook_url'] ?? '' );
+		if ( $webhook && WCAI_Installer::is_blocked_url( $webhook ) ) {
+			$webhook = '';
+		}
+		if ( 'custom' === $provider && $api_base && WCAI_Installer::is_blocked_url( $api_base ) ) {
+			$api_base = '';
+		}
+
+		$daily_cap = isset( $input['daily_query_cap'] ) ? absint( $input['daily_query_cap'] ) : (int) ( $current['daily_query_cap'] ?? 0 );
+
 		$out = array(
 			'provider'             => $provider,
-			'api_key'              => isset( $input['api_key'] ) ? sanitize_text_field( $input['api_key'] ) : ( $current['api_key'] ?? '' ),
 			'api_base'             => $api_base,
 			'embedding_mode'       => $embedding_mode,
 			'embedding_model'      => $embedding_model,
@@ -164,19 +179,31 @@ class WCAI_Settings {
 			'rate_limit_per_min'   => isset( $input['rate_limit_anon'] ) ? max( 1, min( 120, absint( $input['rate_limit_anon'] ) ) ) : (int) ( $current['rate_limit_per_min'] ?? 20 ),
 			'plan'                 => $plan,
 			'monthly_query_cap'    => $caps[ $plan ] ?? 500,
+			'daily_query_cap'      => $daily_cap,
 			'hide_branding'        => ! empty( $input['hide_branding'] ) ? '1' : '0',
 			'widget_title'         => isset( $input['widget_title'] ) ? sanitize_text_field( $input['widget_title'] ) : ( $current['widget_title'] ?? '' ),
 			'accent_color'         => isset( $input['accent_color'] ) ? sanitize_hex_color( $input['accent_color'] ) ?: '#0d9488' : ( $current['accent_color'] ?? '#0d9488' ),
-			'agency_license_key'   => isset( $input['agency_license_key'] ) ? sanitize_text_field( $input['agency_license_key'] ) : ( $current['agency_license_key'] ?? '' ),
-			'public_api_key'       => isset( $input['public_api_key'] ) ? sanitize_text_field( $input['public_api_key'] ) : ( $current['public_api_key'] ?? '' ),
-			'webhook_url'          => isset( $input['webhook_url'] ) ? esc_url_raw( $input['webhook_url'] ) : ( $current['webhook_url'] ?? '' ),
+			'webhook_url'          => $webhook,
 		);
 
-		return array_merge( $defaults, $out );
+		$merged = array_merge( $defaults, $out );
+		foreach ( WCAI_Installer::SECRET_KEYS as $sk ) {
+			unset( $merged[ $sk ] );
+		}
+
+		$secrets = array(
+			'api_key'            => $api_key,
+			'public_api_key'     => isset( $input['public_api_key'] ) ? sanitize_text_field( (string) $input['public_api_key'] ) : (string) ( $current['public_api_key'] ?? '' ),
+			'agency_license_key' => isset( $input['agency_license_key'] ) ? sanitize_text_field( (string) $input['agency_license_key'] ) : (string) ( $current['agency_license_key'] ?? '' ),
+		);
+		update_option( 'wcai_secrets', $secrets, false );
+		WCAI_Installer::force_options_autoload_no();
+
+		return $merged;
 	}
 
 	/**
-	 * Get all settings with defaults.
+	 * Get all settings with defaults (secrets merged for reads).
 	 *
 	 * @return array
 	 */
@@ -186,7 +213,11 @@ class WCAI_Settings {
 		if ( ! is_array( $saved ) ) {
 			$saved = array();
 		}
-		return array_merge( $defaults, $saved );
+		$secrets = get_option( 'wcai_secrets', array() );
+		if ( ! is_array( $secrets ) ) {
+			$secrets = array();
+		}
+		return array_merge( $defaults, $saved, $secrets );
 	}
 
 	/**
@@ -224,7 +255,32 @@ class WCAI_Settings {
 			exit;
 		}
 
-		WCAI_Indexer::queue_full_reindex();
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'page'         => 'wcai-settings',
+						'wcai_reindex' => 'as_missing',
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+			exit;
+		}
+
+		$queued = WCAI_Indexer::queue_full_reindex();
+		if ( ! $queued ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'page'         => 'wcai-settings',
+						'wcai_reindex' => 'as_missing',
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+			exit;
+		}
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -254,7 +310,11 @@ class WCAI_Settings {
 			echo '</p></div>';
 		} elseif ( 'no_key' === $status ) {
 			echo '<div class="notice notice-error is-dismissible"><p>';
-			echo esc_html__( 'Add an API key before reindexing (or use LongCat + local embeddings).', 'wc-ai-shopping-assistant' );
+			echo esc_html__( 'Add an API key before reindexing (or use LongCat/Claude with local embeddings).', 'wc-ai-shopping-assistant' );
+			echo '</p></div>';
+		} elseif ( 'as_missing' === $status ) {
+			echo '<div class="notice notice-error is-dismissible"><p>';
+			echo esc_html__( 'Action Scheduler is not available. Ensure WooCommerce is active and up to date, then try again.', 'wc-ai-shopping-assistant' );
 			echo '</p></div>';
 		}
 	}
@@ -267,21 +327,31 @@ class WCAI_Settings {
 			return;
 		}
 
+		if ( ! class_exists( 'WCAI_Providers' ) ) {
+			echo '<div class="wrap"><div class="notice notice-error"><p>';
+			echo esc_html__( 'Plugin files are incomplete (providers missing). Reinstall the plugin.', 'wc-ai-shopping-assistant' );
+			echo '</p></div></div>';
+			return;
+		}
+
 		$settings = self::get_all();
 		$count    = WCAI_Indexer::indexed_count();
 		$state    = get_option( 'wcai_reindex_state', array() );
 		$used     = WCAI_Usage::used();
 		$cap      = WCAI_Usage::monthly_cap();
+		$daily    = WCAI_Usage::daily_cap();
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'AI Shopping Assistant', 'wc-ai-shopping-assistant' ); ?></h1>
 			<p>
 				<?php
 				printf(
-					/* translators: 1: used 2: cap */
-					esc_html__( 'Plan usage this month: %1$d / %2$d', 'wc-ai-shopping-assistant' ),
-					$used,
-					$cap
+					/* translators: 1: used 2: monthly cap 3: daily used 4: daily cap */
+					esc_html__( 'Plan usage: %1$d / %2$d this month · %3$d / %4$d today', 'wc-ai-shopping-assistant' ),
+					(int) $used,
+					(int) $cap,
+					(int) WCAI_Usage::used_today(),
+					(int) $daily
 				);
 				?>
 			</p>
@@ -305,8 +375,9 @@ class WCAI_Settings {
 					<tr>
 						<th scope="row"><label for="wcai_api_key"><?php esc_html_e( 'API Key', 'wc-ai-shopping-assistant' ); ?></label></th>
 						<td>
-							<input type="password" class="regular-text" id="wcai_api_key" name="wcai_settings[api_key]" value="<?php echo esc_attr( $settings['api_key'] ); ?>" autocomplete="off" />
+							<input type="password" class="regular-text" id="wcai_api_key" name="wcai_settings[api_key]" value="" placeholder="<?php echo $settings['api_key'] ? esc_attr__( '•••••••• (saved — leave blank to keep)', 'wc-ai-shopping-assistant' ) : ''; ?>" autocomplete="off" />
 							<p class="description" id="wcai_key_hint"></p>
+							<p><button type="button" class="button" id="wcai-test-connection"><?php esc_html_e( 'Test connection', 'wc-ai-shopping-assistant' ); ?></button> <span id="wcai-test-result" class="description"></span></p>
 						</td>
 					</tr>
 					<tr>
@@ -448,6 +519,13 @@ class WCAI_Settings {
 								<option value="pro" <?php selected( $settings['plan'], 'pro' ); ?>><?php esc_html_e( 'Pro (5,000/mo)', 'wc-ai-shopping-assistant' ); ?></option>
 								<option value="agency" <?php selected( $settings['plan'], 'agency' ); ?>><?php esc_html_e( 'Agency (50,000/mo)', 'wc-ai-shopping-assistant' ); ?></option>
 							</select>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="wcai_daily_cap"><?php esc_html_e( 'Daily query cap', 'wc-ai-shopping-assistant' ); ?></label></th>
+						<td>
+							<input type="number" min="0" max="100000" id="wcai_daily_cap" name="wcai_settings[daily_query_cap]" value="<?php echo esc_attr( (string) ( $settings['daily_query_cap'] ?? 0 ) ); ?>" />
+							<p class="description"><?php esc_html_e( '0 = auto (about monthly cap ÷ 30, minimum 50). Counts shopper/API queries; indexing embeddings also count toward the monthly budget.', 'wc-ai-shopping-assistant' ); ?></p>
 						</td>
 					</tr>
 				</table>

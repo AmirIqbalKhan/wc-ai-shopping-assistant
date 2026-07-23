@@ -101,4 +101,4 @@ If the query is ambiguous (e.g., "something for hiking" with no other constraint
 
 ## 8. Admin-facing insight extraction
 
-Every session's final unresolved or low-confidence query is logged (query text, no PII) to a lightweight table for the insights dashboard. This lets store owners see patterns like "42 shoppers asked for X in the last 30 days but we don't carry it" — a natural upsell for inventory planning, independent of the core assistant feature.
+Every session's final unresolved or low-confidence query is logged (query text may include personal details shoppers typed; retained 90 days) to a lightweight table for the insights dashboard. This lets store owners see patterns like "42 shoppers asked for X in the last 30 days but we don't carry it" — a natural upsell for inventory planning, independent of the core assistant feature.

@@ -119,4 +119,41 @@
   });
 
   applyProvider(false);
+
+  var testBtn = document.getElementById('wcai-test-connection');
+  var testOut = document.getElementById('wcai-test-result');
+  if (testBtn && wcaiAdmin.testUrl) {
+    testBtn.addEventListener('click', function () {
+      if (testOut) testOut.textContent = 'Testing…';
+      fetch(wcaiAdmin.testUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'X-WP-Nonce': wcaiAdmin.nonce,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      })
+        .then(function (r) {
+          return r.json().then(function (body) {
+            return { ok: r.ok, body: body };
+          });
+        })
+        .then(function (res) {
+          if (!testOut) return;
+          if (res.ok && res.body && res.body.ok) {
+            testOut.textContent =
+              'OK — ' + (res.body.provider || '') + ' @ ' + (res.body.api_base || '');
+          } else {
+            var msg =
+              (res.body && (res.body.message || (res.body.data && res.body.data.message))) ||
+              'Connection failed';
+            testOut.textContent = msg;
+          }
+        })
+        .catch(function () {
+          if (testOut) testOut.textContent = 'Request failed';
+        });
+    });
+  }
 })();

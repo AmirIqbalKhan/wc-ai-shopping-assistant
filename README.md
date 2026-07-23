@@ -85,11 +85,22 @@ Then activate in **Plugins** and follow the settings steps above.
 **WooCommerce → AI Assistant**
 
 1. **AI provider** — OpenAI, Claude, Gemini, LongCat, OpenRouter, or Custom  
-2. **API key** — from your provider dashboard  
+2. **API key** — from your provider dashboard (leave blank on later saves to keep the existing key)  
 3. **Chat model** — pick from the dropdown or type a custom model ID  
 4. **Embeddings** — *Auto* (recommended): local for Claude/LongCat; API for OpenAI/Gemini/OpenRouter  
 5. **Widgets** — enable floating bubble and/or auto-insert search bar (see below)  
-6. **Reindex Catalog** after the first save or after large catalog changes  
+6. Use **Test connection**, then **Reindex Catalog** after the first save or after large catalog changes  
+
+### LongCat Chat
+
+Use the [LongCat API Platform](https://longcat.chat/platform/docs/):
+
+- Provider: **LongCat Chat**
+- API base (stored for this plugin): `https://api.longcat.chat/openai/v1`  
+  (Official SDK base is `https://api.longcat.chat/openai`; the plugin appends `/chat/completions`.)
+- Default model: `LongCat-2.0`
+- Auth: Bearer app key from the LongCat platform
+- Embeddings: local (LongCat has no embeddings endpoint)
 
 ---
 
@@ -186,7 +197,7 @@ Shopper message
 
 ### Analytics events
 
-- Every shopper query is logged (text + result count + match flag; no customer PII).
+- Every shopper query is logged (text + result count + match flag). Query text can contain personal details and is retained for **90 days**, then deleted. Privacy exporters/erasers are registered.
 - Product card clicks call `POST /wp-json/wcai/v1/click` for CTR.
 - Unmatched queries feed the Insights dashboard for inventory planning.
 
@@ -251,7 +262,7 @@ add_action( 'wcai_query_completed', function ( $payload ) {
 
 ## Security & trust
 
-- Only **public product data** is sent to the AI provider (no orders, customers, or drafts).
+- Catalog fields plus the shopper’s query (and short conversation history) are sent to the configured AI provider. Orders and customer accounts are not. Hidden / password-protected products are not indexed or recommended.
 - Recommendations are **closed-set**: hallucinated product IDs are dropped server-side.
 - Price/stock are re-checked from WooCommerce at render time.
 - Anonymous and logged-in rate limits are configurable.

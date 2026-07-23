@@ -55,7 +55,18 @@ class WCAI_OpenAI_Client {
 			return $base;
 		}
 
-		if ( ! preg_match( '#/v1$#', $base ) && false === strpos( $base, '/openai' ) ) {
+		// LongCat (and similar): docs SDK base is .../openai; our client appends /chat/completions,
+		// so normalize to .../openai/v1 → https://api.longcat.chat/openai/v1/chat/completions.
+		if ( 'longcat' === $provider || false !== strpos( $base, '/openai' ) ) {
+			if ( preg_match( '#/openai$#', $base ) ) {
+				$base .= '/v1';
+			} elseif ( ! preg_match( '#/v1$#', $base ) && false === strpos( $base, '/v1beta' ) ) {
+				$base .= '/v1';
+			}
+			return $base;
+		}
+
+		if ( ! preg_match( '#/v1$#', $base ) ) {
 			$base .= '/v1';
 		}
 
@@ -93,7 +104,18 @@ class WCAI_OpenAI_Client {
 		}
 
 		if ( self::use_local_embeddings() ) {
-			return WCAI_Local_Embeddings::embed( $text );
+			$allowed = WCAI_Usage::assert_allowed( 'embed' );
+			if ( is_wp_error( $allowed ) ) {
+				return $allowed;
+			}
+			$vec = WCAI_Local_Embeddings::embed( $text );
+			WCAI_Usage::increment( 'embed', 1 );
+			return $vec;
+		}
+
+		$allowed = WCAI_Usage::assert_allowed( 'embed' );
+		if ( is_wp_error( $allowed ) ) {
+			return $allowed;
 		}
 
 		$api_key = WCAI_Settings::get( 'api_key' );
@@ -119,6 +141,7 @@ class WCAI_OpenAI_Client {
 			return new WP_Error( 'wcai_bad_embedding', __( 'Unexpected embedding response from the API.', 'wc-ai-shopping-assistant' ) );
 		}
 
+		WCAI_Usage::increment( 'embed', 1 );
 		return array_map( 'floatval', $response['data'][0]['embedding'] );
 	}
 
@@ -136,8 +159,16 @@ class WCAI_OpenAI_Client {
 			$clean[] = '' === $t ? ' ' : $t;
 		}
 
+		$n       = max( 1, count( $clean ) );
+		$allowed = WCAI_Usage::assert_allowed( 'embed' );
+		if ( is_wp_error( $allowed ) ) {
+			return $allowed;
+		}
+
 		if ( self::use_local_embeddings() ) {
-			return WCAI_Local_Embeddings::embed_batch( $clean );
+			$out = WCAI_Local_Embeddings::embed_batch( $clean );
+			WCAI_Usage::increment( 'embed', $n );
+			return $out;
 		}
 
 		$api_key = WCAI_Settings::get( 'api_key' );
@@ -175,6 +206,7 @@ class WCAI_OpenAI_Client {
 			$out[] = array_map( 'floatval', $row['embedding'] ?? array() );
 		}
 
+		WCAI_Usage::increment( 'embed', $n );
 		return $out;
 	}
 
@@ -214,6 +246,7 @@ class WCAI_OpenAI_Client {
 			'model'       => $model,
 			'messages'    => $messages,
 			'temperature' => 0.2,
+			'max_tokens'  => 2048,
 		);
 
 		if ( in_array( $provider, array( 'openai', 'openrouter', 'custom' ), true ) ) {
@@ -385,7 +418,11 @@ class WCAI_OpenAI_Client {
 	 * @return array|WP_Error
 	 */
 	private static function http_post( string $url, array $headers, array $body ) {
-		$http = wp_remote_post(
+		if ( WCAI_Installer::is_blocked_url( $url ) ) {
+			return new WP_Error( 'wcai_blocked_url', __( 'API base URL points to a blocked or private host.', 'wc-ai-shopping-assistant' ) );
+		}
+
+		$http = wp_safe_remote_post(
 			$url,
 			array(
 				'timeout' => 90,

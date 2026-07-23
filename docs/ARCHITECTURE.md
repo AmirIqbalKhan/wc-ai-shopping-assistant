@@ -125,7 +125,7 @@ Two supported modes, configurable per store:
 
 ## 8. Security & data handling
 
-- Only publicly visible product data is sent to the AI provider — never customer PII, order data, or draft/private products
-- API keys stored using WordPress's standard options API with encryption at rest where the hosting environment supports it
-- REST endpoint validates nonces for logged-in contexts and applies rate limiting for anonymous shoppers
+- Catalog product data is sent to the AI provider together with the shopper’s free-text query and recent conversation turns. Hidden / password-protected products are excluded. Orders and customer accounts are never sent.
+- API keys are stored in a non-autoloaded `wcai_secrets` option (not loaded on every front-end request)
+- Public REST endpoints are rate-limited via a durable custom table. A missing `X-WP-Nonce` does not reject the request — it simply counts as anonymous.
 - Aligns with the EU Cyber Resilience Act's vulnerability-disclosure expectations: maintain a documented process for reporting and patching security issues, given the September 2026 compliance deadline for WordPress plugin/theme authors
