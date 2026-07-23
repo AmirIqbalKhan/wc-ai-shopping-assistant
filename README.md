@@ -265,7 +265,11 @@ add_action( 'wcai_query_completed', function ( $payload ) {
 wc-ai-shopping-assistant/
 ├── wc-ai-shopping-assistant.php   # Bootstrap
 ├── includes/                      # PHP classes (indexer, agent, REST, analytics, …)
-├── assets/js|css/                 # Storefront widget + admin UI
+├── assets/                        # Icons, storefront widget + admin UI
+│   ├── icon-128x128.png           # WordPress.org plugin icon
+│   ├── icon-256x256.png           # Retina plugin icon
+│   └── icon.svg                   # Vector master
+├── .wordpress-org/                # Directory assets for wordpress.org SVN
 ├── blocks/ai-assistant-block/     # Gutenberg block
 ├── docs/                          # Architecture, agent design, roadmap
 └── tests/smoke-check.php          # Offline structure checks

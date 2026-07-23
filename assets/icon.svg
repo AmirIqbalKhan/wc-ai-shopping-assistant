@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="WooCommerce AI Shopping Assistant">
+  <rect width="256" height="256" fill="#ffffff"/>
+  <!-- Shopping bag + chat tail -->
+  <path fill="#0d9488" d="
+    M88 78
+    C88 62 100 50 116 50
+    H140
+    C156 50 168 62 168 78
+    V86
+    H196
+    C204 86 210 93 209 101
+    L196 198
+    C194 212 182 222 168 222
+    H112
+    L88 238
+    L100 222
+    C86 222 74 212 72 198
+    L59 101
+    C58 93 64 86 72 86
+    H88
+    Z
+    M116 78
+    V86
+    H140
+    V78
+    C140 72 136 68 128 68
+    C120 68 116 72 116 78
+    Z"/>
+  <!-- Inner chat bubble -->
+  <rect x="98" y="118" width="60" height="46" rx="14" fill="#ffffff"/>
+  <circle cx="114" cy="141" r="5.5" fill="#0f172a"/>
+  <circle cx="128" cy="141" r="5.5" fill="#0f172a"/>
+  <circle cx="142" cy="141" r="5.5" fill="#0f172a"/>
+</svg>
