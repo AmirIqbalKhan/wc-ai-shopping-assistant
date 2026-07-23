@@ -88,26 +88,62 @@ Then activate in **Plugins** and follow the settings steps above.
 2. **API key** — from your provider dashboard  
 3. **Chat model** — pick from the dropdown or type a custom model ID  
 4. **Embeddings** — *Auto* (recommended): local for Claude/LongCat; API for OpenAI/Gemini/OpenRouter  
-5. **Placement** — floating / embedded / both  
+5. **Widgets** — enable floating bubble and/or auto-insert search bar (see below)  
 6. **Reindex Catalog** after the first save or after large catalog changes  
 
-**Shortcodes** (put anywhere — hero, header template, page content, widgets)
+---
+
+## Widgets & placements
+
+Place the assistant wherever you want on your site — hero, header/nav area, homepage section, product pages, or a floating corner bubble. Search and button widgets open a chat overlay with live product recommendations.
+
+### Widget types
+
+| Type | Shortcode | Best for |
+|------|-----------|----------|
+| **Search bar** | `[wc_ai_assistant type="search"]` | Hero, header, any content section |
+| **Button** | `[wc_ai_assistant type="button" label="Ask AI"]` | CTAs anywhere on the site |
+| **Chat panel** | `[wc_ai_assistant type="panel"]` | Dedicated page or full-width section |
+| **Floating** | `[wc_ai_assistant type="floating"]` | Page-local floating bubble |
+
+Site-wide floating bubble can also be toggled in **WooCommerce → AI Assistant → Floating button** (no shortcode needed).
+
+### Examples
+
+**Hero / homepage search**
 
 ```
 [wc_ai_assistant type="search"]
-[wc_ai_assistant type="button" label="Ask AI"]
-[wc_ai_assistant type="panel"]
-[wc_ai_assistant type="floating"]
 ```
 
-**Gutenberg**
+**Header or banner CTA**
 
-Insert the **AI Shopping Assistant** block and choose layout: Search bar / Button / Panel / Floating.
+```
+[wc_ai_assistant type="button" label="Find products with AI"]
+```
 
-**Settings**
+**Full embedded assistant on a “Help me shop” page**
 
-- Toggle the site-wide floating bubble
-- Optionally auto-insert a search bar at the top of the page
+```
+[wc_ai_assistant type="panel"]
+```
+
+### Gutenberg block
+
+1. Edit any page or post.  
+2. Insert the **AI Shopping Assistant** block.  
+3. In the sidebar, choose layout: **Search bar**, **Button**, **Chat panel**, or **Floating**.  
+4. Optionally set a custom button/search label.
+
+### Settings options
+
+Under **WooCommerce → AI Assistant → Widget & placement**:
+
+- **Floating button** — show or hide the site-wide AI bubble  
+- **Auto-insert search bar** — off, or insert near the top of the page (after `body` opens / near header)  
+- Or leave auto-insert off and place widgets yourself with shortcodes or the block  
+
+Custom label example: `[wc_ai_assistant type="button" label="Ask our stylist"]`
 
 ---
 

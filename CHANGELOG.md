@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- Flexible widgets: AI search bar, Ask AI button, embedded panel, floating bubble
+- Shortcode `type` / `label` attributes and Gutenberg layout picker
+- Settings for site-wide floating toggle and optional auto-insert search bar
+
 ## 0.3.0
 
 - Multi-provider support: OpenAI, Claude (Anthropic), Gemini, LongCat, OpenRouter, Custom
