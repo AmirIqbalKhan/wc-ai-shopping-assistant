@@ -177,7 +177,9 @@ class WCAI_Installer {
 			'embedding_model'         => 'text-embedding-3-small',
 			'chat_model'              => 'gpt-4o-mini',
 			'widget_enabled'          => '1',
-			'placement_mode'          => 'floating',
+			'show_floating'           => '1',
+			'auto_search_location'    => 'none', // none | body_open
+			'placement_mode'          => 'both', // legacy
 			'top_n'                   => 20,
 			'similarity_threshold'    => 0.25,
 			'prefilter_limit'         => 300,

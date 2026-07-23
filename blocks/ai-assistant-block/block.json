@@ -4,11 +4,21 @@
   "title": "AI Shopping Assistant",
   "category": "woocommerce",
   "icon": "format-chat",
-  "description": "Embed the conversational product finder on any page.",
-  "keywords": ["woocommerce", "ai", "chat", "assistant"],
+  "description": "Add an AI search bar, Ask AI button, chat panel, or floating bubble anywhere.",
+  "keywords": ["woocommerce", "ai", "chat", "assistant", "search"],
   "supports": {
     "html": false,
     "align": ["wide", "full"]
+  },
+  "attributes": {
+    "type": {
+      "type": "string",
+      "default": "panel"
+    },
+    "label": {
+      "type": "string",
+      "default": ""
+    }
   },
   "textdomain": "wc-ai-shopping-assistant",
   "editorScript": "file:./editor.js"

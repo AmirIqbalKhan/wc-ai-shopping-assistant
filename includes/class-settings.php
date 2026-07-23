@@ -90,9 +90,14 @@ class WCAI_Settings {
 		$input   = is_array( $input ) ? $input : array();
 		$defaults = WCAI_Installer::default_settings();
 
-		$placement = isset( $input['placement_mode'] ) ? sanitize_key( $input['placement_mode'] ) : ( $current['placement_mode'] ?? 'floating' );
+		$placement = isset( $input['placement_mode'] ) ? sanitize_key( $input['placement_mode'] ) : ( $current['placement_mode'] ?? 'both' );
 		if ( ! in_array( $placement, array( 'floating', 'embedded', 'both' ), true ) ) {
-			$placement = 'floating';
+			$placement = 'both';
+		}
+
+		$auto_search = isset( $input['auto_search_location'] ) ? sanitize_key( $input['auto_search_location'] ) : ( $current['auto_search_location'] ?? 'none' );
+		if ( ! in_array( $auto_search, array( 'none', 'body_open' ), true ) ) {
+			$auto_search = 'none';
 		}
 
 		$index_mode = isset( $input['index_mode'] ) ? sanitize_key( $input['index_mode'] ) : ( $current['index_mode'] ?? 'parent' );
@@ -147,6 +152,8 @@ class WCAI_Settings {
 			'embedding_model'      => $embedding_model,
 			'chat_model'           => $chat_model,
 			'widget_enabled'       => ! empty( $input['widget_enabled'] ) ? '1' : '0',
+			'show_floating'        => ! empty( $input['show_floating'] ) ? '1' : '0',
+			'auto_search_location' => $auto_search,
 			'placement_mode'       => $placement,
 			'top_n'                => isset( $input['top_n'] ) ? max( 5, min( 50, absint( $input['top_n'] ) ) ) : (int) ( $current['top_n'] ?? 20 ),
 			'similarity_threshold' => isset( $input['similarity_threshold'] ) ? max( 0, min( 1, (float) $input['similarity_threshold'] ) ) : (float) ( $current['similarity_threshold'] ?? 0.25 ),
@@ -347,14 +354,31 @@ class WCAI_Settings {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="wcai_placement"><?php esc_html_e( 'Placement mode', 'wc-ai-shopping-assistant' ); ?></label></th>
+						<th scope="row"><?php esc_html_e( 'Floating button', 'wc-ai-shopping-assistant' ); ?></th>
 						<td>
-							<select id="wcai_placement" name="wcai_settings[placement_mode]">
-								<option value="floating" <?php selected( $settings['placement_mode'], 'floating' ); ?>><?php esc_html_e( 'Floating bubble only', 'wc-ai-shopping-assistant' ); ?></option>
-								<option value="embedded" <?php selected( $settings['placement_mode'], 'embedded' ); ?>><?php esc_html_e( 'Embedded (shortcode/block) only', 'wc-ai-shopping-assistant' ); ?></option>
-								<option value="both" <?php selected( $settings['placement_mode'], 'both' ); ?>><?php esc_html_e( 'Both floating and embedded', 'wc-ai-shopping-assistant' ); ?></option>
+							<label>
+								<input type="checkbox" name="wcai_settings[show_floating]" value="1" <?php checked( $settings['show_floating'] ?? '1', '1' ); ?> />
+								<?php esc_html_e( 'Show site-wide floating AI bubble', 'wc-ai-shopping-assistant' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="wcai_auto_search"><?php esc_html_e( 'Auto-insert search bar', 'wc-ai-shopping-assistant' ); ?></label></th>
+						<td>
+							<select id="wcai_auto_search" name="wcai_settings[auto_search_location]">
+								<option value="none" <?php selected( $settings['auto_search_location'] ?? 'none', 'none' ); ?>><?php esc_html_e( 'Off — place manually', 'wc-ai-shopping-assistant' ); ?></option>
+								<option value="body_open" <?php selected( $settings['auto_search_location'] ?? '', 'body_open' ); ?>><?php esc_html_e( 'Top of page (after body opens / near header)', 'wc-ai-shopping-assistant' ); ?></option>
 							</select>
-							<p class="description"><?php esc_html_e( 'Shortcode: [wc_ai_assistant] — Block: AI Shopping Assistant', 'wc-ai-shopping-assistant' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Or place widgets yourself with shortcodes / the Gutenberg block (hero, nav area, product pages, etc.).', 'wc-ai-shopping-assistant' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Shortcodes', 'wc-ai-shopping-assistant' ); ?></th>
+						<td>
+							<p><code>[wc_ai_assistant type="search"]</code> — <?php esc_html_e( 'AI search bar (hero / header / any section)', 'wc-ai-shopping-assistant' ); ?></p>
+							<p><code>[wc_ai_assistant type="button" label="Ask AI"]</code> — <?php esc_html_e( 'Button that opens the assistant', 'wc-ai-shopping-assistant' ); ?></p>
+							<p><code>[wc_ai_assistant type="panel"]</code> — <?php esc_html_e( 'Full embedded chat panel', 'wc-ai-shopping-assistant' ); ?></p>
+							<p><code>[wc_ai_assistant type="floating"]</code> — <?php esc_html_e( 'Local floating bubble on that page', 'wc-ai-shopping-assistant' ); ?></p>
 						</td>
 					</tr>
 					<tr>

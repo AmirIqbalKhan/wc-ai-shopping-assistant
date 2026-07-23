@@ -15,7 +15,7 @@ Built for store owners who want smarter discovery without inventing products, pr
 - **Grounded answers only** — the model may only recommend IDs returned from your indexed catalog
 - **Live price & stock** at render time (protects against stale index data)
 - **Per-product reasons** explaining why each item matched
-- **Floating bubble**, **shortcode**, and **Gutenberg block** placements
+- **Floating bubble**, **inline AI search bar**, **Ask AI button**, and **embedded chat panel** — place via shortcode, Gutenberg block, or auto-insert near the header
 - **Voice input** (Web Speech API) where the browser supports it
 
 ### Catalog intelligence
@@ -91,15 +91,23 @@ Then activate in **Plugins** and follow the settings steps above.
 5. **Placement** — floating / embedded / both  
 6. **Reindex Catalog** after the first save or after large catalog changes  
 
-**Shortcode**
+**Shortcodes** (put anywhere — hero, header template, page content, widgets)
 
 ```
-[wc_ai_assistant]
+[wc_ai_assistant type="search"]
+[wc_ai_assistant type="button" label="Ask AI"]
+[wc_ai_assistant type="panel"]
+[wc_ai_assistant type="floating"]
 ```
 
 **Gutenberg**
 
-Insert the **AI Shopping Assistant** block on any page or post.
+Insert the **AI Shopping Assistant** block and choose layout: Search bar / Button / Panel / Floating.
+
+**Settings**
+
+- Toggle the site-wide floating bubble
+- Optionally auto-insert a search bar at the top of the page
 
 ---
 

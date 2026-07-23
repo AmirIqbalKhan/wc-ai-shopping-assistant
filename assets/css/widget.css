@@ -248,7 +248,95 @@
   margin: 0 auto;
 }
 
-.wcai-embed-root {
+.wcai-panel--modal {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100001;
+}
+
+.wcai-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 100000;
+}
+
+.wcai-backdrop[hidden],
+.wcai-panel[hidden] {
+  display: none !important;
+}
+
+/* Inline AI search bar — hero / nav / content */
+.wcai-search-root,
+.wcai-auto-search {
+  width: 100%;
+  max-width: 720px;
+  margin: 0.75rem auto;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.wcai-searchbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+  background: #fff;
+  border: 1px solid var(--wcai-border, #e2e8f0);
+  border-radius: 999px;
+  padding: 6px 6px 6px 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.wcai-searchbar__input {
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 0.95rem;
+  background: transparent;
+  min-width: 0;
+}
+
+.wcai-searchbar__btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: var(--wcai-accent, #0d9488);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wcai-searchbar__btn:hover {
+  filter: brightness(0.95);
+}
+
+/* CTA button widget */
+.wcai-button-root {
+  display: inline-flex;
+  margin: 0.5rem 0;
+}
+
+.wcai-cta {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  background: var(--wcai-accent, #0d9488);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.25);
+}
+
+.wcai-cta:hover {
+  filter: brightness(0.95);
+}
+
+.wcai-embed-root,
+.wcai-panel-root {
   width: 100%;
   margin: 1.5rem 0;
 }
@@ -258,6 +346,13 @@
   border: 1px dashed #94a3b8;
   border-radius: 8px;
   background: #f8fafc;
+}
+
+.wcai-block-preview code {
+  font-size: 0.8rem;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 @media (max-width: 480px) {
@@ -272,8 +367,20 @@
     height: min(70vh, 520px);
   }
 
+  .wcai-panel--modal {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
+
   .wcai-launcher {
     right: 12px;
     bottom: 12px;
+  }
+
+  .wcai-searchbar {
+    border-radius: 14px;
+    grid-template-columns: 1fr;
+    padding: 10px;
   }
 }

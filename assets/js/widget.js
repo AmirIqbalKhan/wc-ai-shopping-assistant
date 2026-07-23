@@ -1,5 +1,6 @@
 /**
- * WooCommerce AI Shopping Assistant — multi-turn widget (float + embed).
+ * WooCommerce AI Shopping Assistant widgets:
+ * floating | panel | search | button
  */
 (function () {
   'use strict';
@@ -24,9 +25,7 @@
     if (!token) return;
     try {
       sessionStorage.setItem(SESSION_KEY, token);
-    } catch (e) {
-      /* ignore */
-    }
+    } catch (e) {}
   }
 
   function escapeHtml(str) {
@@ -44,35 +43,45 @@
     root.setAttribute('data-wcai-mounted', '1');
 
     var mode = root.getAttribute('data-wcai-mode') || 'floating';
-    var embedded = mode === 'embedded';
-    var open = embedded;
-    var busy = false;
+    var customLabel = root.getAttribute('data-wcai-label') || '';
 
     if (cfg.accent) {
       root.style.setProperty('--wcai-accent', cfg.accent);
     }
 
+    if (mode === 'search') {
+      mountSearch(root, customLabel);
+      return;
+    }
+    if (mode === 'button') {
+      mountButton(root, customLabel);
+      return;
+    }
+
+    // floating | panel (embedded)
+    mountChat(root, mode === 'panel' || mode === 'embedded', mode === 'floating');
+  }
+
+  function createPanel(embedded, withClose) {
+    var voiceSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
     var panel = document.createElement('div');
-    panel.className = 'wcai-panel' + (embedded ? ' wcai-panel--embedded' : '');
+    panel.className = 'wcai-panel' + (embedded ? ' wcai-panel--embedded' : ' wcai-panel--overlay');
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', cfg.i18n.title);
     if (!embedded) {
       panel.hidden = true;
     }
 
-    var voiceSupported =
-      !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-
     panel.innerHTML =
       '<div class="wcai-panel__header">' +
       '<strong class="wcai-panel__title">' +
       escapeHtml(cfg.i18n.title) +
       '</strong>' +
-      (embedded
-        ? ''
-        : '<button type="button" class="wcai-panel__close" aria-label="' +
+      (withClose
+        ? '<button type="button" class="wcai-panel__close" aria-label="' +
           escapeHtml(cfg.i18n.closeLabel) +
-          '">&times;</button>') +
+          '">&times;</button>'
+        : '') +
       '</div>' +
       '<div class="wcai-panel__messages" aria-live="polite"></div>' +
       '<form class="wcai-panel__form">' +
@@ -81,8 +90,6 @@
       '" autocomplete="off" />' +
       (voiceSupported
         ? '<button type="button" class="wcai-panel__mic" aria-label="' +
-          escapeHtml(cfg.i18n.voice) +
-          '" title="' +
           escapeHtml(cfg.i18n.voice) +
           '">🎤</button>'
         : '') +
@@ -94,31 +101,17 @@
         ? ''
         : '<div class="wcai-panel__brand">' + escapeHtml(cfg.i18n.poweredBy) + '</div>');
 
-    root.appendChild(panel);
+    return panel;
+  }
 
-    var launcher = null;
-    if (!embedded) {
-      launcher = document.createElement('button');
-      launcher.type = 'button';
-      launcher.className = 'wcai-launcher';
-      launcher.setAttribute('aria-label', cfg.i18n.openLabel);
-      launcher.innerHTML = '<span class="wcai-launcher__icon" aria-hidden="true">AI</span>';
-      root.appendChild(launcher);
-      launcher.addEventListener('click', function () {
-        setOpen(!open);
-      });
-      var closeBtn = panel.querySelector('.wcai-panel__close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function () {
-          setOpen(false);
-        });
-      }
-    }
-
+  function wireChat(panel, options) {
+    options = options || {};
+    var busy = false;
     var messagesEl = panel.querySelector('.wcai-panel__messages');
     var form = panel.querySelector('.wcai-panel__form');
     var input = panel.querySelector('.wcai-panel__input');
     var micBtn = panel.querySelector('.wcai-panel__mic');
+    var closeBtn = panel.querySelector('.wcai-panel__close');
 
     appendBot(cfg.i18n.empty);
 
@@ -132,7 +125,7 @@
       ask(q);
     });
 
-    if (micBtn && voiceSupported) {
+    if (micBtn) {
       setupVoice(micBtn, input, function (transcript) {
         if (busy || !transcript) return;
         appendUser(transcript);
@@ -140,20 +133,13 @@
       });
     }
 
-    function setOpen(next) {
-      open = next;
-      panel.hidden = !open;
-      if (launcher) {
-        launcher.setAttribute('aria-expanded', open ? 'true' : 'false');
-        launcher.setAttribute('aria-label', open ? cfg.i18n.closeLabel : cfg.i18n.openLabel);
-      }
-      if (open) input.focus();
+    if (closeBtn && options.onClose) {
+      closeBtn.addEventListener('click', options.onClose);
     }
 
     function ask(query) {
       busy = true;
       var thinking = appendBot(cfg.i18n.thinking, true);
-
       fetch(cfg.restUrl, {
         method: 'POST',
         credentials: 'same-origin',
@@ -181,12 +167,8 @@
             appendBot(msg);
             return;
           }
-          if (result.body.session_token) {
-            setSessionToken(result.body.session_token);
-          }
-          if (result.body.query_id) {
-            lastQueryId = result.body.query_id;
-          }
+          if (result.body.session_token) setSessionToken(result.body.session_token);
+          if (result.body.query_id) lastQueryId = result.body.query_id;
           renderResponse(result.body);
         })
         .catch(function () {
@@ -199,9 +181,7 @@
     }
 
     function renderResponse(data) {
-      var text = (data && data.reply_text) || '';
-      if (text) appendBot(text);
-
+      if (data && data.reply_text) appendBot(data.reply_text);
       var products = (data && data.products) || [];
       if (products.length) {
         var wrap = document.createElement('div');
@@ -212,10 +192,7 @@
         messagesEl.appendChild(wrap);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
-
-      if (data && data.clarifying_question) {
-        appendBot(data.clarifying_question);
-      }
+      if (data && data.clarifying_question) appendBot(data.clarifying_question);
     }
 
     function productCard(p) {
@@ -236,27 +213,20 @@
 
       var body = document.createElement('div');
       body.className = 'wcai-card__body';
-
       var title = document.createElement('div');
       title.className = 'wcai-card__title';
       title.textContent = p.title || '';
-
       var price = document.createElement('div');
       price.className = 'wcai-card__price';
-      if (p.price_html) {
-        price.innerHTML = p.price_html;
-      } else if (typeof p.price === 'number') {
+      if (p.price_html) price.innerHTML = p.price_html;
+      else if (typeof p.price === 'number')
         price.textContent = cfg.currency + Number(p.price).toFixed(2);
-      }
-
       var reason = document.createElement('div');
       reason.className = 'wcai-card__reason';
       reason.textContent = p.reason || '';
-
       body.appendChild(title);
       body.appendChild(price);
       if (p.reason) body.appendChild(reason);
-
       a.appendChild(img);
       a.appendChild(body);
       return a;
@@ -276,9 +246,7 @@
           query_id: lastQueryId || 0,
           session_token: getSessionToken(),
         }),
-      }).catch(function () {
-        /* ignore */
-      });
+      }).catch(function () {});
     }
 
     function appendUser(text) {
@@ -298,10 +266,142 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
       return el;
     }
+
+    return {
+      ask: ask,
+      focus: function () {
+        input.focus();
+      },
+      prefillAndAsk: function (q) {
+        if (!q) return;
+        appendUser(q);
+        ask(q);
+      },
+      input: input,
+    };
+  }
+
+  function mountChat(root, embedded, withLauncher) {
+    var open = embedded;
+    var panel = createPanel(embedded, !embedded || withLauncher);
+    root.appendChild(panel);
+
+    var launcher = null;
+    if (withLauncher) {
+      launcher = document.createElement('button');
+      launcher.type = 'button';
+      launcher.className = 'wcai-launcher';
+      launcher.setAttribute('aria-label', cfg.i18n.openLabel);
+      launcher.innerHTML = '<span class="wcai-launcher__icon" aria-hidden="true">AI</span>';
+      root.appendChild(launcher);
+      launcher.addEventListener('click', function () {
+        setOpen(!open);
+      });
+    }
+
+    var api = wireChat(panel, {
+      onClose: function () {
+        setOpen(false);
+      },
+    });
+
+    function setOpen(next) {
+      open = next;
+      panel.hidden = !open;
+      if (launcher) {
+        launcher.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      if (open) api.focus();
+    }
+  }
+
+  function ensureOverlayHost() {
+    var host = document.getElementById('wcai-overlay-host');
+    if (host) return host;
+    host = document.createElement('div');
+    host.id = 'wcai-overlay-host';
+    host.className = 'wcai-root';
+    document.body.appendChild(host);
+    return host;
+  }
+
+  function openOverlayChat(initialQuery) {
+    var host = ensureOverlayHost();
+    var existing = host.querySelector('.wcai-panel');
+    var backdrop = host.querySelector('.wcai-backdrop');
+
+    if (!existing) {
+      backdrop = document.createElement('div');
+      backdrop.className = 'wcai-backdrop';
+      host.appendChild(backdrop);
+
+      existing = createPanel(false, true);
+      existing.classList.add('wcai-panel--modal');
+      host.appendChild(existing);
+
+      var api = wireChat(existing, {
+        onClose: function () {
+          existing.hidden = true;
+          backdrop.hidden = true;
+        },
+      });
+      host._wcaiApi = api;
+
+      backdrop.addEventListener('click', function () {
+        existing.hidden = true;
+        backdrop.hidden = true;
+      });
+    }
+
+    existing.hidden = false;
+    if (backdrop) backdrop.hidden = false;
+
+    var api = host._wcaiApi;
+    if (api) {
+      api.focus();
+      if (initialQuery) {
+        api.prefillAndAsk(initialQuery);
+      }
+    }
+  }
+
+  function mountSearch(root, customLabel) {
+    var wrap = document.createElement('form');
+    wrap.className = 'wcai-searchbar';
+    wrap.setAttribute('role', 'search');
+    wrap.innerHTML =
+      '<input type="search" class="wcai-searchbar__input" maxlength="500" placeholder="' +
+      escapeHtml(cfg.i18n.searchPlaceholder) +
+      '" autocomplete="off" />' +
+      '<button type="submit" class="wcai-searchbar__btn">' +
+      escapeHtml(customLabel || cfg.i18n.search) +
+      '</button>';
+    root.appendChild(wrap);
+
+    wrap.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = wrap.querySelector('.wcai-searchbar__input');
+      var q = (input.value || '').trim();
+      if (!q) return;
+      openOverlayChat(q);
+      input.value = '';
+    });
+  }
+
+  function mountButton(root, customLabel) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'wcai-cta';
+    btn.textContent = customLabel || cfg.i18n.askAi;
+    root.appendChild(btn);
+    btn.addEventListener('click', function () {
+      openOverlayChat('');
+    });
   }
 
   function setupVoice(micBtn, input, onResult) {
     var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) return;
     var rec = new Recognition();
     rec.interimResults = false;
     rec.continuous = false;
@@ -314,7 +414,6 @@
       }
       listening = true;
       micBtn.classList.add('is-listening');
-      micBtn.setAttribute('aria-label', cfg.i18n.listening);
       try {
         rec.start();
       } catch (e) {
@@ -324,20 +423,17 @@
     });
 
     rec.onresult = function (event) {
-      var transcript = '';
-      if (event.results && event.results[0] && event.results[0][0]) {
-        transcript = event.results[0][0].transcript || '';
-      }
+      var transcript =
+        event.results && event.results[0] && event.results[0][0]
+          ? event.results[0][0].transcript || ''
+          : '';
       input.value = transcript;
       onResult(transcript.trim());
     };
-
     rec.onend = function () {
       listening = false;
       micBtn.classList.remove('is-listening');
-      micBtn.setAttribute('aria-label', cfg.i18n.voice);
     };
-
     rec.onerror = function () {
       listening = false;
       micBtn.classList.remove('is-listening');
@@ -345,12 +441,15 @@
   }
 
   function boot() {
-    var floating = document.getElementById('wcai-assistant-root');
-    if (floating) mount(floating);
-
-    var embeds = document.querySelectorAll('.wcai-embed-root');
-    for (var i = 0; i < embeds.length; i++) {
-      mount(embeds[i]);
+    var nodes = document.querySelectorAll(
+      '#wcai-assistant-root, .wcai-root[data-wcai-mode], .wcai-embed-root'
+    );
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (!n.getAttribute('data-wcai-mode') && n.classList.contains('wcai-embed-root')) {
+        n.setAttribute('data-wcai-mode', 'panel');
+      }
+      mount(n);
     }
   }
 

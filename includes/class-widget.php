@@ -1,6 +1,6 @@
 <?php
 /**
- * Frontend chat widget, shortcode, and block mount.
+ * Frontend widgets: floating, panel, search bar, button + shortcode/block.
  *
  * @package WCAI
  */
@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Enqueues and mounts the storefront assistant UI.
+ * Enqueues and mounts storefront assistant UI variants.
  */
 class WCAI_Widget {
 
@@ -20,17 +20,27 @@ class WCAI_Widget {
 	private static $enqueued = false;
 
 	/**
+	 * Allowed widget layout types.
+	 *
+	 * @return string[]
+	 */
+	public static function types(): array {
+		return array( 'floating', 'panel', 'search', 'button' );
+	}
+
+	/**
 	 * Hook frontend assets.
 	 */
 	public static function init(): void {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'maybe_enqueue' ) );
 		add_action( 'wp_footer', array( __CLASS__, 'render_floating_root' ) );
+		add_action( 'wp_body_open', array( __CLASS__, 'maybe_auto_insert_search' ), 20 );
 		add_shortcode( 'wc_ai_assistant', array( __CLASS__, 'shortcode' ) );
 		add_action( 'init', array( __CLASS__, 'register_block' ) );
 	}
 
 	/**
-	 * Register Gutenberg block.
+	 * Register Gutenberg block with layout attribute.
 	 */
 	public static function register_block(): void {
 		if ( ! function_exists( 'register_block_type' ) ) {
@@ -45,7 +55,7 @@ class WCAI_Widget {
 		wp_register_script(
 			'wcai-ai-assistant-editor',
 			WCAI_PLUGIN_URL . 'blocks/ai-assistant-block/editor.js',
-			array( 'wp-blocks', 'wp-element', 'wp-block-editor' ),
+			array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n' ),
 			WCAI_VERSION,
 			true
 		);
@@ -55,54 +65,53 @@ class WCAI_Widget {
 			array(
 				'editor_script'   => 'wcai-ai-assistant-editor',
 				'render_callback' => array( __CLASS__, 'render_block' ),
+				'attributes'      => array(
+					'type'  => array(
+						'type'    => 'string',
+						'default' => 'panel',
+					),
+					'label' => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+					'align' => array(
+						'type' => 'string',
+					),
+				),
 			)
 		);
 	}
 
 	/**
-	 * Placement mode helper.
-	 *
-	 * @return string
-	 */
-	private static function placement(): string {
-		return (string) WCAI_Settings::get( 'placement_mode', 'floating' );
-	}
-
-	/**
-	 * Whether floating launcher should show.
+	 * Whether floating launcher should show (site-wide).
 	 *
 	 * @return bool
 	 */
 	private static function show_floating(): bool {
-		if ( is_admin() || '1' !== (string) WCAI_Settings::get( 'widget_enabled', '1' ) ) {
+		if ( is_admin() || ! self::widgets_enabled() ) {
 			return false;
 		}
-		$mode = self::placement();
-		return in_array( $mode, array( 'floating', 'both' ), true );
+		return '1' === (string) WCAI_Settings::get( 'show_floating', '1' );
 	}
 
 	/**
-	 * Whether embedded mounts are allowed.
+	 * Master enable switch.
 	 *
 	 * @return bool
 	 */
-	private static function allow_embedded(): bool {
-		if ( is_admin() || '1' !== (string) WCAI_Settings::get( 'widget_enabled', '1' ) ) {
-			return false;
-		}
-		$mode = self::placement();
-		return in_array( $mode, array( 'embedded', 'both' ), true );
+	private static function widgets_enabled(): bool {
+		return '1' === (string) WCAI_Settings::get( 'widget_enabled', '1' );
 	}
 
 	/**
-	 * Enqueue when floating or when shortcode/block may appear (both/embedded load on demand too).
+	 * Enqueue when floating or auto-insert is on.
 	 */
 	public static function maybe_enqueue(): void {
-		if ( is_admin() || '1' !== (string) WCAI_Settings::get( 'widget_enabled', '1' ) ) {
+		if ( is_admin() || ! self::widgets_enabled() ) {
 			return;
 		}
-		// Always enqueue when floating; for embedded-only, shortcode/block will call ensure_assets.
-		if ( self::show_floating() ) {
+		$auto = (string) WCAI_Settings::get( 'auto_search_location', 'none' );
+		if ( self::show_floating() || ( 'none' !== $auto && '' !== $auto ) ) {
 			self::ensure_assets();
 		}
 	}
@@ -129,8 +138,7 @@ class WCAI_Widget {
 		);
 
 		$accent = (string) WCAI_Settings::get( 'accent_color', '#0d9488' );
-		$custom = ':root{--wcai-accent:' . esc_attr( $accent ) . ';}';
-		wp_add_inline_style( 'wcai-widget', $custom );
+		wp_add_inline_style( 'wcai-widget', ':root{--wcai-accent:' . esc_attr( $accent ) . ';}' );
 
 		wp_enqueue_script(
 			'wcai-widget',
@@ -151,55 +159,83 @@ class WCAI_Widget {
 				'hideBranding' => '1' === (string) WCAI_Settings::get( 'hide_branding', '0' ),
 				'accent'       => $accent,
 				'i18n'         => array(
-					'title'       => $title,
-					'placeholder' => __( 'Describe what you are looking for…', 'wc-ai-shopping-assistant' ),
-					'send'        => __( 'Send', 'wc-ai-shopping-assistant' ),
-					'empty'       => __( 'Ask me to find products — e.g. “lightweight rain jacket under $80”. You can refine with follow-ups.', 'wc-ai-shopping-assistant' ),
-					'error'       => __( 'Something went wrong. Please try again.', 'wc-ai-shopping-assistant' ),
-					'thinking'    => __( 'Searching the catalog…', 'wc-ai-shopping-assistant' ),
-					'openLabel'   => __( 'Open shopping assistant', 'wc-ai-shopping-assistant' ),
-					'closeLabel'  => __( 'Close shopping assistant', 'wc-ai-shopping-assistant' ),
-					'poweredBy'   => __( 'Powered by AI Assistant', 'wc-ai-shopping-assistant' ),
-					'voice'       => __( 'Voice input', 'wc-ai-shopping-assistant' ),
-					'listening'   => __( 'Listening…', 'wc-ai-shopping-assistant' ),
+					'title'         => $title,
+					'placeholder'   => __( 'Describe what you are looking for…', 'wc-ai-shopping-assistant' ),
+					'searchPlaceholder' => __( 'Search with AI — e.g. rain jacket under $80', 'wc-ai-shopping-assistant' ),
+					'send'          => __( 'Send', 'wc-ai-shopping-assistant' ),
+					'search'        => __( 'Search', 'wc-ai-shopping-assistant' ),
+					'askAi'         => __( 'Ask AI', 'wc-ai-shopping-assistant' ),
+					'empty'         => __( 'Ask me to find products — e.g. “lightweight rain jacket under $80”. You can refine with follow-ups.', 'wc-ai-shopping-assistant' ),
+					'error'         => __( 'Something went wrong. Please try again.', 'wc-ai-shopping-assistant' ),
+					'thinking'      => __( 'Searching the catalog…', 'wc-ai-shopping-assistant' ),
+					'openLabel'     => __( 'Open shopping assistant', 'wc-ai-shopping-assistant' ),
+					'closeLabel'    => __( 'Close shopping assistant', 'wc-ai-shopping-assistant' ),
+					'poweredBy'     => __( 'Powered by AI Assistant', 'wc-ai-shopping-assistant' ),
+					'voice'         => __( 'Voice input', 'wc-ai-shopping-assistant' ),
+					'listening'     => __( 'Listening…', 'wc-ai-shopping-assistant' ),
 				),
 			)
 		);
 	}
 
 	/**
-	 * Floating mount in footer.
+	 * Site-wide floating launcher.
 	 */
 	public static function render_floating_root(): void {
 		if ( ! self::show_floating() ) {
 			return;
 		}
 		self::ensure_assets();
-		echo '<div id="wcai-assistant-root" data-wcai-mode="floating"></div>';
+		echo '<div id="wcai-assistant-root" class="wcai-root" data-wcai-mode="floating"></div>';
 	}
 
 	/**
-	 * Shortcode output.
+	 * Optional auto-insert of search bar (hero / top of page).
+	 */
+	public static function maybe_auto_insert_search(): void {
+		if ( is_admin() || ! self::widgets_enabled() ) {
+			return;
+		}
+		$loc = (string) WCAI_Settings::get( 'auto_search_location', 'none' );
+		if ( 'body_open' !== $loc ) {
+			return;
+		}
+		echo self::render_mount( 'search', array( 'class' => 'wcai-auto-search' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+	/**
+	 * Shortcode: [wc_ai_assistant type="search|button|panel|floating" label="..." class="..."]
 	 *
-	 * @param array $atts Attributes.
+	 * @param array|string $atts Attributes.
 	 * @return string
 	 */
 	public static function shortcode( $atts = array() ): string {
-		if ( ! self::allow_embedded() && 'both' !== self::placement() && 'embedded' !== self::placement() ) {
-			// If placement is floating-only, still allow shortcode when widget enabled.
-			if ( '1' !== (string) WCAI_Settings::get( 'widget_enabled', '1' ) ) {
-				return '';
-			}
-		}
-		if ( '1' !== (string) WCAI_Settings::get( 'widget_enabled', '1' ) ) {
+		if ( ! self::widgets_enabled() ) {
 			return '';
 		}
-		if ( 'floating' === self::placement() ) {
-			// Still render embedded panel when shortcode is used explicitly.
+
+		$atts = shortcode_atts(
+			array(
+				'type'  => 'panel',
+				'label' => '',
+				'class' => '',
+			),
+			is_array( $atts ) ? $atts : array(),
+			'wc_ai_assistant'
+		);
+
+		$type = sanitize_key( $atts['type'] );
+		if ( ! in_array( $type, self::types(), true ) ) {
+			$type = 'panel';
 		}
-		self::ensure_assets();
-		$id = 'wcai-embed-' . wp_unique_id();
-		return '<div class="wcai-embed-root" id="' . esc_attr( $id ) . '" data-wcai-mode="embedded"></div>';
+
+		return self::render_mount(
+			$type,
+			array(
+				'label' => sanitize_text_field( $atts['label'] ),
+				'class' => sanitize_html_class( $atts['class'] ),
+			)
+		);
 	}
 
 	/**
@@ -209,6 +245,47 @@ class WCAI_Widget {
 	 * @return string
 	 */
 	public static function render_block( $attributes = array() ): string {
-		return self::shortcode();
+		$type  = isset( $attributes['type'] ) ? sanitize_key( $attributes['type'] ) : 'panel';
+		$label = isset( $attributes['label'] ) ? sanitize_text_field( $attributes['label'] ) : '';
+		return self::shortcode(
+			array(
+				'type'  => $type,
+				'label' => $label,
+			)
+		);
+	}
+
+	/**
+	 * Markup for a widget mount point.
+	 *
+	 * @param string $type Mode.
+	 * @param array  $args Extra: label, class.
+	 * @return string
+	 */
+	public static function render_mount( string $type, array $args = array() ): string {
+		if ( ! self::widgets_enabled() ) {
+			return '';
+		}
+		if ( ! in_array( $type, self::types(), true ) ) {
+			$type = 'panel';
+		}
+
+		self::ensure_assets();
+
+		$id    = 'wcai-' . $type . '-' . wp_unique_id();
+		$class = 'wcai-root wcai-' . $type . '-root';
+		if ( ! empty( $args['class'] ) ) {
+			$class .= ' ' . $args['class'];
+		}
+
+		$label = isset( $args['label'] ) ? (string) $args['label'] : '';
+
+		return sprintf(
+			'<div id="%1$s" class="%2$s" data-wcai-mode="%3$s" data-wcai-label="%4$s"></div>',
+			esc_attr( $id ),
+			esc_attr( $class ),
+			esc_attr( $type ),
+			esc_attr( $label )
+		);
 	}
 }
