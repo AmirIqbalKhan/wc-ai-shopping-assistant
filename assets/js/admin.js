@@ -1,5 +1,5 @@
 /**
- * Admin: reindex progress + provider/model cascading dropdowns.
+ * Admin hub: provider cascading, test connection, reindex polling.
  */
 (function () {
   'use strict';
@@ -7,28 +7,48 @@
 
   var bar = document.getElementById('wcai-reindex-bar');
   var label = document.getElementById('wcai-reindex-label');
-  if (bar && label) {
-    function poll() {
-      fetch(wcaiAdmin.statusUrl, {
-        credentials: 'same-origin',
-        headers: { 'X-WP-Nonce': wcaiAdmin.nonce },
-      })
-        .then(function (r) {
-          return r.json();
-        })
-        .then(function (data) {
-          var total = data.total || 0;
-          var done = data.done || 0;
-          var pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
-          bar.style.width = pct + '%';
-          label.textContent =
-            'Progress: ' + done + ' / ' + total + ' (' + (data.status || 'idle') + ')';
-          if (data.status === 'running') {
-            setTimeout(poll, 3000);
-          }
-        })
-        .catch(function () {});
+  var statusVal = document.getElementById('wcai-status-reindex');
+  var statusMeta = document.getElementById('wcai-status-reindex-meta');
+  var pollTimer = null;
+
+  function applyState(data) {
+    var total = data.total || 0;
+    var done = data.done || 0;
+    var pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+    var status = data.status || 'idle';
+    if (bar) bar.style.width = pct + '%';
+    if (label) {
+      label.textContent =
+        'Progress: ' + done + ' / ' + total + ' (' + status + ')';
     }
+    if (statusVal) statusVal.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    if (statusMeta) statusMeta.textContent = done + ' / ' + total;
+  }
+
+  function poll() {
+    fetch(wcaiAdmin.statusUrl, {
+      credentials: 'same-origin',
+      headers: { 'X-WP-Nonce': wcaiAdmin.nonce },
+    })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        applyState(data);
+        if (data.status === 'running' || data.status === 'queued') {
+          pollTimer = setTimeout(poll, 2500);
+        }
+      })
+      .catch(function () {});
+  }
+
+  if (bar && label) {
+    if (wcaiAdmin.reindexState) applyState(wcaiAdmin.reindexState);
+    poll();
+  }
+
+  // After redirect with queued flag, keep polling.
+  if (window.location.search.indexOf('wcai_reindex=queued') !== -1 && !pollTimer) {
     poll();
   }
 
@@ -41,9 +61,8 @@
   var embSelect = document.getElementById('wcai_embedding_model_select');
   var embInput = document.getElementById('wcai_embedding_model');
 
-  if (!providerEl || !chatSelect || !chatInput) return;
-
   function fillSelect(select, map, current, allowCustom) {
+    if (!select) return;
     select.innerHTML = '';
     var ids = Object.keys(map || {});
     ids.forEach(function (id) {
@@ -68,6 +87,7 @@
   }
 
   function applyProvider(updateDefaults) {
+    if (!providerEl || !chatSelect || !chatInput) return;
     var id = providerEl.value;
     var meta = providers[id] || {};
     if (keyHint) {
@@ -100,31 +120,37 @@
     }
   }
 
-  chatSelect.addEventListener('change', function () {
-    if (chatSelect.value !== '__custom__') {
-      chatInput.value = chatSelect.value;
-    }
-  });
-
-  if (embSelect && embInput) {
-    embSelect.addEventListener('change', function () {
-      if (embSelect.value !== '__custom__') {
-        embInput.value = embSelect.value;
+  if (providerEl && chatSelect && chatInput) {
+    chatSelect.addEventListener('change', function () {
+      if (chatSelect.value !== '__custom__') {
+        chatInput.value = chatSelect.value;
       }
     });
+
+    if (embSelect && embInput) {
+      embSelect.addEventListener('change', function () {
+        if (embSelect.value !== '__custom__') {
+          embInput.value = embSelect.value;
+        }
+      });
+    }
+
+    providerEl.addEventListener('change', function () {
+      applyProvider(true);
+    });
+
+    applyProvider(false);
   }
-
-  providerEl.addEventListener('change', function () {
-    applyProvider(true);
-  });
-
-  applyProvider(false);
 
   var testBtn = document.getElementById('wcai-test-connection');
   var testOut = document.getElementById('wcai-test-result');
   if (testBtn && wcaiAdmin.testUrl) {
     testBtn.addEventListener('click', function () {
-      if (testOut) testOut.textContent = 'Testing…';
+      testBtn.disabled = true;
+      if (testOut) {
+        testOut.className = 'wcai-callout is-busy';
+        testOut.textContent = (wcaiAdmin.i18n && wcaiAdmin.i18n.testing) || 'Testing…';
+      }
       fetch(wcaiAdmin.testUrl, {
         method: 'POST',
         credentials: 'same-origin',
@@ -142,17 +168,29 @@
         .then(function (res) {
           if (!testOut) return;
           if (res.ok && res.body && res.body.ok) {
+            testOut.className = 'wcai-callout is-ok';
             testOut.textContent =
-              'OK — ' + (res.body.provider || '') + ' @ ' + (res.body.api_base || '');
+              ((wcaiAdmin.i18n && wcaiAdmin.i18n.testOk) || 'Connection OK') +
+              ' — ' +
+              (res.body.provider || '') +
+              ' @ ' +
+              (res.body.api_base || '');
           } else {
             var msg =
               (res.body && (res.body.message || (res.body.data && res.body.data.message))) ||
-              'Connection failed';
+              ((wcaiAdmin.i18n && wcaiAdmin.i18n.testFail) || 'Connection failed');
+            testOut.className = 'wcai-callout is-err';
             testOut.textContent = msg;
           }
         })
         .catch(function () {
-          if (testOut) testOut.textContent = 'Request failed';
+          if (testOut) {
+            testOut.className = 'wcai-callout is-err';
+            testOut.textContent = (wcaiAdmin.i18n && wcaiAdmin.i18n.testFail) || 'Connection failed';
+          }
+        })
+        .finally(function () {
+          testBtn.disabled = false;
         });
     });
   }

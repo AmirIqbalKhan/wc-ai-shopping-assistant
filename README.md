@@ -39,7 +39,7 @@ Choose your chat provider from settings:
 ### Store-owner tools
 - **Analytics** — query volume, product click-through rate, top queries (7 / 30 days)
 - **Insights** — unmatched / low-confidence requests (demand gaps for merchandising)
-- **Usage plans** — Free / Pro / Agency monthly query caps (config-only; no payment gateway)
+- **Usage tracking** — query volume is logged for analytics; plan/query caps are currently disabled (unlimited)
 - **White-label** — custom title, accent color, hide “Powered by”
 - **Public search API** + optional **webhook** for themes and integrations
 - Rate limits for anonymous visitors and logged-in users
@@ -191,8 +191,8 @@ Shopper message
 
 | Screen | Purpose |
 |--------|---------|
-| **WooCommerce → AI Assistant** | Provider, models, placement, plans, white-label, reindex |
-| **WooCommerce → AI Analytics** | Queries, clicks, CTR, top queries, monthly plan usage |
+| **WooCommerce → AI Assistant** | Provider, models, placement, white-label, reindex |
+| **WooCommerce → AI Analytics** | Queries, clicks, CTR, top queries |
 | **WooCommerce → AI Insights** | Unmatched shopper intents / catalog gaps |
 
 ### Analytics events
@@ -266,7 +266,7 @@ add_action( 'wcai_query_completed', function ( $payload ) {
 - Recommendations are **closed-set**: hallucinated product IDs are dropped server-side.
 - Price/stock are re-checked from WooCommerce at render time.
 - Anonymous and logged-in rate limits are configurable.
-- Monthly plan caps soft-block excess traffic.
+- Abuse rate limits still apply per IP/user; monthly/daily plan caps are disabled.
 
 ---
 

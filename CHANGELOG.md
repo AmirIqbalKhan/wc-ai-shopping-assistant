@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.4
+
+- Premium storefront UI: Outfit typography, mobile chat sheet, suggestion chips, skeleton thinking, richer product cards with Add to cart
+- Unified WooCommerce → AI Assistant hub with Settings / Analytics / Insights tabs, status strip, and polished admin flows
+
+## 0.3.3
+
+- Hide Limits & plan and Integrations from settings; usage caps disabled (unlimited) until re-enabled later
+
 ## 0.3.2
 
 - Security & cost: durable rate-limit table, gated click tracking, daily caps, embedding metering, non-autoloaded secrets

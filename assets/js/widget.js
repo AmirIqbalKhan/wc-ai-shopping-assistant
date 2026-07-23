@@ -12,6 +12,15 @@
   var cfg = wcaiWidget;
   var SESSION_KEY = 'wcai_session_token';
   var lastQueryId = 0;
+  var reduceMotion =
+    window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var MIC_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>';
+  var CLOSE_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5.05L5.05 6.4 10.66 12l-5.61 5.6 1.35 1.35L12 13.34l5.6 5.61 1.35-1.35L13.34 12l5.61-5.6-1.35-1.35L12 10.66 6.4 5.05z"/></svg>';
+  var LAUNCHER_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C4 5.12 5.12 4 6.5 4h7C15.88 4 17 5.12 17 6.5V8h.5A2.5 2.5 0 0 1 20 10.5v6A3.5 3.5 0 0 1 16.5 20h-9A3.5 3.5 0 0 1 4 16.5v-10zm4.5 7.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zm3.5 0a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zm3.5 0a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5z"/></svg>';
 
   function getSessionToken() {
     try {
@@ -36,6 +45,35 @@
       .replace(/"/g, '&quot;');
   }
 
+  function chips() {
+    return (cfg.suggestions && cfg.suggestions.length
+      ? cfg.suggestions
+      : [
+          cfg.i18n.chipUnder || 'Under $50',
+          cfg.i18n.chipGift || 'Gift ideas',
+          cfg.i18n.chipPopular || 'Bestsellers',
+          cfg.i18n.chipNew || 'Something new',
+        ]
+    ).slice(0, 4);
+  }
+
+  function showToast(msg) {
+    var existing = document.querySelector('.wcai-toast');
+    if (existing) existing.remove();
+    var t = document.createElement('div');
+    t.className = 'wcai-toast';
+    t.setAttribute('role', 'status');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () {
+      if (t.parentNode) t.parentNode.removeChild(t);
+    }, 2200);
+  }
+
+  function lockBody(on) {
+    document.body.classList.toggle('wcai-lock', !!on);
+  }
+
   function mount(root) {
     if (!root || root.getAttribute('data-wcai-mounted') === '1') {
       return;
@@ -58,7 +96,6 @@
       return;
     }
 
-    // floating | panel (embedded)
     mountChat(root, mode === 'panel' || mode === 'embedded', mode === 'floating');
   }
 
@@ -67,12 +104,14 @@
     var panel = document.createElement('div');
     panel.className = 'wcai-panel' + (embedded ? ' wcai-panel--embedded' : ' wcai-panel--overlay');
     panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', embedded ? 'false' : 'true');
     panel.setAttribute('aria-label', cfg.i18n.title);
     if (!embedded) {
       panel.hidden = true;
     }
 
     panel.innerHTML =
+      '<div class="wcai-panel__handle" aria-hidden="true"></div>' +
       '<div class="wcai-panel__header">' +
       '<strong class="wcai-panel__title">' +
       escapeHtml(cfg.i18n.title) +
@@ -80,18 +119,24 @@
       (withClose
         ? '<button type="button" class="wcai-panel__close" aria-label="' +
           escapeHtml(cfg.i18n.closeLabel) +
-          '">&times;</button>'
+          '">' +
+          CLOSE_SVG +
+          '</button>'
         : '') +
       '</div>' +
       '<div class="wcai-panel__messages" aria-live="polite"></div>' +
-      '<form class="wcai-panel__form">' +
+      '<form class="wcai-panel__form' +
+      (voiceSupported ? '' : ' wcai-panel__form--no-mic') +
+      '">' +
       '<input type="text" class="wcai-panel__input" maxlength="500" placeholder="' +
       escapeHtml(cfg.i18n.placeholder) +
       '" autocomplete="off" />' +
       (voiceSupported
         ? '<button type="button" class="wcai-panel__mic" aria-label="' +
           escapeHtml(cfg.i18n.voice) +
-          '">🎤</button>'
+          '">' +
+          MIC_SVG +
+          '</button>'
         : '') +
       '<button type="submit" class="wcai-panel__send">' +
       escapeHtml(cfg.i18n.send) +
@@ -107,13 +152,15 @@
   function wireChat(panel, options) {
     options = options || {};
     var busy = false;
+    var started = false;
     var messagesEl = panel.querySelector('.wcai-panel__messages');
     var form = panel.querySelector('.wcai-panel__form');
     var input = panel.querySelector('.wcai-panel__input');
+    var sendBtn = panel.querySelector('.wcai-panel__send');
     var micBtn = panel.querySelector('.wcai-panel__mic');
     var closeBtn = panel.querySelector('.wcai-panel__close');
 
-    appendBot(cfg.i18n.empty);
+    renderEmpty();
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -121,6 +168,7 @@
       var q = (input.value || '').trim();
       if (!q) return;
       input.value = '';
+      ensureChatStarted();
       appendUser(q);
       ask(q);
     });
@@ -128,6 +176,7 @@
     if (micBtn) {
       setupVoice(micBtn, input, function (transcript) {
         if (busy || !transcript) return;
+        ensureChatStarted();
         appendUser(transcript);
         ask(transcript);
       });
@@ -137,9 +186,52 @@
       closeBtn.addEventListener('click', options.onClose);
     }
 
+    function ensureChatStarted() {
+      if (started) return;
+      started = true;
+      var empty = messagesEl.querySelector('.wcai-empty');
+      if (empty) empty.remove();
+    }
+
+    function renderEmpty() {
+      messagesEl.innerHTML = '';
+      started = false;
+      var wrap = document.createElement('div');
+      wrap.className = 'wcai-empty';
+      wrap.innerHTML =
+        '<h3 class="wcai-empty__title">' +
+        escapeHtml(cfg.i18n.title) +
+        '</h3>' +
+        '<p class="wcai-empty__text">' +
+        escapeHtml(cfg.i18n.empty) +
+        '</p>' +
+        '<div class="wcai-chips"></div>';
+      var chipRow = wrap.querySelector('.wcai-chips');
+      chips().forEach(function (label) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'wcai-chip';
+        b.textContent = label;
+        b.addEventListener('click', function () {
+          if (busy) return;
+          ensureChatStarted();
+          appendUser(label);
+          ask(label);
+        });
+        chipRow.appendChild(b);
+      });
+      messagesEl.appendChild(wrap);
+    }
+
+    function setBusy(next) {
+      busy = next;
+      if (sendBtn) sendBtn.disabled = next;
+      if (input) input.disabled = next;
+    }
+
     function ask(query) {
-      busy = true;
-      var thinking = appendBot(cfg.i18n.thinking, true);
+      setBusy(true);
+      var thinking = appendThinking();
       fetch(cfg.restUrl, {
         method: 'POST',
         credentials: 'same-origin',
@@ -176,7 +268,7 @@
           appendBot(cfg.i18n.error);
         })
         .finally(function () {
-          busy = false;
+          setBusy(false);
         });
     }
 
@@ -186,8 +278,12 @@
       if (products.length) {
         var wrap = document.createElement('div');
         wrap.className = 'wcai-msg wcai-msg--bot wcai-msg--cards';
-        products.forEach(function (p) {
-          wrap.appendChild(productCard(p));
+        products.forEach(function (p, i) {
+          var card = productCard(p);
+          if (!reduceMotion) {
+            card.style.animationDelay = i * 0.06 + 's';
+          }
+          wrap.appendChild(card);
         });
         messagesEl.appendChild(wrap);
         messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -196,20 +292,17 @@
     }
 
     function productCard(p) {
-      var a = document.createElement('a');
-      a.className = 'wcai-card';
-      a.href = p.url || '#';
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.addEventListener('click', function () {
-        trackClick(p.id);
-      });
+      var card = document.createElement('div');
+      card.className = 'wcai-card';
 
+      var media = document.createElement('div');
+      media.className = 'wcai-card__media';
       var img = document.createElement('img');
       img.className = 'wcai-card__img';
       img.src = p.image || '';
       img.alt = p.title || '';
       img.loading = 'lazy';
+      media.appendChild(img);
 
       var body = document.createElement('div');
       body.className = 'wcai-card__body';
@@ -224,12 +317,85 @@
       var reason = document.createElement('div');
       reason.className = 'wcai-card__reason';
       reason.textContent = p.reason || '';
+
+      var actions = document.createElement('div');
+      actions.className = 'wcai-card__actions';
+
+      if (p.add_to_cart) {
+        var atc = document.createElement('button');
+        atc.type = 'button';
+        atc.className = 'wcai-card__atc';
+        atc.textContent = cfg.i18n.addToCart || 'Add to cart';
+        atc.addEventListener('click', function () {
+          addToCart(p, atc);
+        });
+        actions.appendChild(atc);
+      }
+
+      var view = document.createElement('a');
+      view.className = 'wcai-card__view';
+      view.href = p.url || '#';
+      view.target = '_blank';
+      view.rel = 'noopener noreferrer';
+      view.textContent = cfg.i18n.viewProduct || 'View product';
+      view.addEventListener('click', function () {
+        trackClick(p.id);
+      });
+      actions.appendChild(view);
+
       body.appendChild(title);
       body.appendChild(price);
       if (p.reason) body.appendChild(reason);
-      a.appendChild(img);
-      a.appendChild(body);
-      return a;
+      body.appendChild(actions);
+      card.appendChild(media);
+      card.appendChild(body);
+      return card;
+    }
+
+    function addToCart(p, btn) {
+      if (!cfg.ajaxUrl || !p.id) return;
+      trackClick(p.id);
+      var prev = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = cfg.i18n.adding || 'Adding…';
+
+      var body = new URLSearchParams();
+      body.set('product_id', String(p.id));
+      body.set('quantity', '1');
+      if (cfg.cartNonce) body.set('security', cfg.cartNonce);
+
+      fetch(cfg.ajaxUrl + '?wc-ajax=add_to_cart', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: body.toString(),
+      })
+        .then(function (r) {
+          return r.json().catch(function () {
+            return {};
+          });
+        })
+        .then(function (data) {
+          if (data && data.error) {
+            showToast(cfg.i18n.cartError || cfg.i18n.error);
+            return;
+          }
+          showToast(cfg.i18n.added || 'Added to cart');
+          if (typeof jQuery !== 'undefined') {
+            jQuery(document.body).trigger('added_to_cart', [
+              data && data.fragments,
+              data && data.cart_hash,
+              jQuery(btn),
+            ]);
+          }
+        })
+        .catch(function () {
+          showToast(cfg.i18n.cartError || cfg.i18n.error);
+        })
+        .finally(function () {
+          btn.disabled = false;
+          btn.textContent = prev;
+        });
     }
 
     function trackClick(productId) {
@@ -260,10 +426,21 @@
       return el;
     }
 
-    function appendBot(text, isThinking) {
+    function appendBot(text) {
       var el = document.createElement('div');
-      el.className = 'wcai-msg wcai-msg--bot' + (isThinking ? ' wcai-msg--thinking' : '');
+      el.className = 'wcai-msg wcai-msg--bot';
       el.textContent = text;
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return el;
+    }
+
+    function appendThinking() {
+      var el = document.createElement('div');
+      el.className = 'wcai-msg wcai-msg--bot wcai-msg--thinking';
+      el.setAttribute('aria-label', cfg.i18n.thinking);
+      el.innerHTML =
+        '<span class="wcai-skel"></span><span class="wcai-skel"></span><span class="wcai-skel"></span>';
       messagesEl.appendChild(el);
       messagesEl.scrollTop = messagesEl.scrollHeight;
       return el;
@@ -276,10 +453,42 @@
       },
       prefillAndAsk: function (q) {
         if (!q) return;
+        ensureChatStarted();
         appendUser(q);
         ask(q);
       },
       input: input,
+      panel: panel,
+    };
+  }
+
+  function bindA11y(panel, onClose) {
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      var focusables = panel.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      var list = Array.prototype.filter.call(focusables, function (el) {
+        return !el.disabled && el.offsetParent !== null;
+      });
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    panel.addEventListener('keydown', onKey);
+    return function () {
+      panel.removeEventListener('keydown', onKey);
     };
   }
 
@@ -287,6 +496,7 @@
     var open = embedded;
     var panel = createPanel(embedded, !embedded || withLauncher);
     root.appendChild(panel);
+    var unbindA11y = null;
 
     var launcher = null;
     if (withLauncher) {
@@ -294,7 +504,8 @@
       launcher.type = 'button';
       launcher.className = 'wcai-launcher';
       launcher.setAttribute('aria-label', cfg.i18n.openLabel);
-      launcher.innerHTML = '<span class="wcai-launcher__icon" aria-hidden="true">AI</span>';
+      launcher.setAttribute('aria-expanded', 'false');
+      launcher.innerHTML = '<span class="wcai-launcher__icon">' + LAUNCHER_SVG + '</span>';
       root.appendChild(launcher);
       launcher.addEventListener('click', function () {
         setOpen(!open);
@@ -313,7 +524,21 @@
       if (launcher) {
         launcher.setAttribute('aria-expanded', open ? 'true' : 'false');
       }
-      if (open) api.focus();
+      if (!embedded) {
+        lockBody(open);
+        if (unbindA11y) {
+          unbindA11y();
+          unbindA11y = null;
+        }
+        if (open) {
+          unbindA11y = bindA11y(panel, function () {
+            setOpen(false);
+          });
+          api.focus();
+        }
+      } else if (open) {
+        api.focus();
+      }
     }
   }
 
@@ -332,6 +557,16 @@
     var existing = host.querySelector('.wcai-panel');
     var backdrop = host.querySelector('.wcai-backdrop');
 
+    function close() {
+      if (existing) existing.hidden = true;
+      if (backdrop) backdrop.hidden = true;
+      lockBody(false);
+      if (host._wcaiUnbind) {
+        host._wcaiUnbind();
+        host._wcaiUnbind = null;
+      }
+    }
+
     if (!existing) {
       backdrop = document.createElement('div');
       backdrop.className = 'wcai-backdrop';
@@ -341,22 +576,17 @@
       existing.classList.add('wcai-panel--modal');
       host.appendChild(existing);
 
-      var api = wireChat(existing, {
-        onClose: function () {
-          existing.hidden = true;
-          backdrop.hidden = true;
-        },
-      });
+      var api = wireChat(existing, { onClose: close });
       host._wcaiApi = api;
 
-      backdrop.addEventListener('click', function () {
-        existing.hidden = true;
-        backdrop.hidden = true;
-      });
+      backdrop.addEventListener('click', close);
     }
 
     existing.hidden = false;
     if (backdrop) backdrop.hidden = false;
+    lockBody(true);
+    if (host._wcaiUnbind) host._wcaiUnbind();
+    host._wcaiUnbind = bindA11y(existing, close);
 
     var api = host._wcaiApi;
     if (api) {
@@ -416,6 +646,7 @@
       }
       listening = true;
       micBtn.classList.add('is-listening');
+      micBtn.setAttribute('aria-label', cfg.i18n.listening || cfg.i18n.voice);
       try {
         rec.start();
       } catch (e) {
@@ -435,10 +666,12 @@
     rec.onend = function () {
       listening = false;
       micBtn.classList.remove('is-listening');
+      micBtn.setAttribute('aria-label', cfg.i18n.voice);
     };
     rec.onerror = function () {
       listening = false;
       micBtn.classList.remove('is-listening');
+      micBtn.setAttribute('aria-label', cfg.i18n.voice);
     };
   }
 

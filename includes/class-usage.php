@@ -1,6 +1,6 @@
 <?php
 /**
- * Usage plan caps and atomic counters.
+ * Usage counters (no public plan limits).
  *
  * @package WCAI
  */
@@ -8,50 +8,55 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Soft local usage tiers (queries + embedding units).
+ * Tracks query/embed volume. Caps are disabled for now (always allow).
  */
 class WCAI_Usage {
 
 	/**
-	 * Plan caps (queries per calendar month).
+	 * Whether usage caps are enforced.
+	 *
+	 * @return bool
+	 */
+	public static function limits_enabled(): bool {
+		return false;
+	}
+
+	/**
+	 * Plan caps map (reserved for a later release).
 	 *
 	 * @return array
 	 */
 	public static function plan_caps(): array {
 		return array(
-			'free'   => 500,
-			'pro'    => 5000,
-			'agency' => 50000,
+			'free'   => 0,
+			'pro'    => 0,
+			'agency' => 0,
 		);
 	}
 
 	/**
-	 * Effective monthly query cap from settings/plan.
+	 * Effective monthly query cap. 0 = unlimited.
 	 *
 	 * @return int
 	 */
 	public static function monthly_cap(): int {
-		$plan     = (string) WCAI_Settings::get( 'plan', 'free' );
-		$caps     = self::plan_caps();
-		$cap      = $caps[ $plan ] ?? 500;
-		$override = (int) WCAI_Settings::get( 'monthly_query_cap', 0 );
-		if ( $override > 0 ) {
-			$cap = $override;
+		if ( ! self::limits_enabled() ) {
+			return 0;
 		}
-		return max( 1, $cap );
+		$override = (int) WCAI_Settings::get( 'monthly_query_cap', 0 );
+		return max( 0, $override );
 	}
 
 	/**
-	 * Daily query ceiling.
+	 * Daily query ceiling. 0 = unlimited.
 	 *
 	 * @return int
 	 */
 	public static function daily_cap(): int {
-		$override = (int) WCAI_Settings::get( 'daily_query_cap', 0 );
-		if ( $override > 0 ) {
-			return max( 1, $override );
+		if ( ! self::limits_enabled() ) {
+			return 0;
 		}
-		return max( 50, (int) ceil( self::monthly_cap() / 30 ) );
+		return max( 0, (int) WCAI_Settings::get( 'daily_query_cap', 0 ) );
 	}
 
 	/**
@@ -121,7 +126,6 @@ class WCAI_Usage {
 			return (int) $val;
 		}
 
-		// Legacy option fallback for month queries.
 		if ( 'query_month' === $counter ) {
 			$data = get_option( 'wcai_usage', array() );
 			if ( is_array( $data ) && ( $data['month'] ?? '' ) === $period ) {
@@ -155,43 +159,21 @@ class WCAI_Usage {
 	}
 
 	/**
-	 * Whether another query is allowed (monthly + daily).
+	 * Whether another query/embed is allowed.
 	 *
 	 * @param string $kind query|embed.
 	 * @return true|WP_Error
 	 */
 	public static function assert_allowed( string $kind = 'query' ) {
-		if ( 'embed' === $kind ) {
-			// Embeddings share the monthly query budget (1 embed unit ≈ 1 query unit).
-			if ( self::embeds_used() + self::used() >= self::monthly_cap() ) {
-				return new WP_Error(
-					'wcai_plan_limit',
-					__( 'Monthly AI usage limit reached (queries + indexing). Upgrade the plan in AI Assistant settings.', 'wc-ai-shopping-assistant' ),
-					array( 'status' => 402 )
-				);
-			}
+		unset( $kind );
+		if ( ! self::limits_enabled() ) {
 			return true;
-		}
-
-		if ( self::used() >= self::monthly_cap() ) {
-			return new WP_Error(
-				'wcai_plan_limit',
-				__( 'Monthly query limit reached for this plan. Upgrade the plan in AI Assistant settings.', 'wc-ai-shopping-assistant' ),
-				array( 'status' => 402 )
-			);
-		}
-		if ( self::used_today() >= self::daily_cap() ) {
-			return new WP_Error(
-				'wcai_daily_limit',
-				__( 'Daily query limit reached. Try again tomorrow or raise the daily cap in settings.', 'wc-ai-shopping-assistant' ),
-				array( 'status' => 402 )
-			);
 		}
 		return true;
 	}
 
 	/**
-	 * Increment usage counter(s).
+	 * Increment usage counter(s) for analytics.
 	 *
 	 * @param string $kind query|embed.
 	 * @param int    $n    Units.

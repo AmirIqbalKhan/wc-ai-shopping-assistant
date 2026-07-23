@@ -269,6 +269,10 @@ class WCAI_Agent {
 		}
 		$image_url = $image_id ? wp_get_attachment_image_url( $image_id, 'woocommerce_thumbnail' ) : wc_placeholder_img_src( 'woocommerce_thumbnail' );
 
+		$type        = $product->get_type();
+		$purchasable = $product->is_purchasable() && $product->is_in_stock();
+		$can_atc     = $purchasable && in_array( $type, array( 'simple', 'variation' ), true ) && ! $product->is_type( 'variable' );
+
 		return array(
 			'id'           => $product_id,
 			'title'        => $product->get_name(),
@@ -278,6 +282,9 @@ class WCAI_Agent {
 			'url'          => $product->get_permalink(),
 			'image'        => $image_url ? $image_url : '',
 			'reason'       => sanitize_text_field( $reason ),
+			'type'         => $type,
+			'purchasable'  => (bool) $purchasable,
+			'add_to_cart'  => (bool) $can_atc,
 		);
 	}
 }

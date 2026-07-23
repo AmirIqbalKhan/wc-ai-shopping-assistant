@@ -15,24 +15,10 @@ class WCAI_Analytics {
 	const RETENTION_DAYS = 90;
 
 	/**
-	 * Hook admin page.
+	 * Hook cleanup (UI is served via AI Assistant hub tabs).
 	 */
 	public static function init(): void {
-		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ), 60 );
-	}
-
-	/**
-	 * Analytics submenu.
-	 */
-	public static function register_menu(): void {
-		add_submenu_page(
-			'woocommerce',
-			__( 'AI Analytics', 'wc-ai-shopping-assistant' ),
-			__( 'AI Analytics', 'wc-ai-shopping-assistant' ),
-			'manage_woocommerce',
-			'wcai-analytics',
-			array( __CLASS__, 'render_page' )
-		);
+		// Intentionally no separate submenu — see WCAI_Settings::render_page().
 	}
 
 	/**
@@ -164,7 +150,7 @@ class WCAI_Analytics {
 	}
 
 	/**
-	 * Stats for last N days.
+	 * Aggregate stats for a period.
 	 *
 	 * @param int $days Days.
 	 * @return array
@@ -236,37 +222,109 @@ class WCAI_Analytics {
 	}
 
 	/**
-	 * Render analytics page.
+	 * Resolve period from request (7 / 30 / 90).
+	 *
+	 * @return int
+	 */
+	public static function request_days(): int {
+		$days = isset( $_GET['days'] ) ? absint( $_GET['days'] ) : 30; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! in_array( $days, array( 7, 30, 90 ), true ) ) {
+			return 30;
+		}
+		return $days;
+	}
+
+	/**
+	 * Period chip navigation for hub tabs.
+	 *
+	 * @param string $tab  analytics|insights.
+	 * @param int    $days Active days.
+	 */
+	public static function render_period_chips( string $tab, int $days ): void {
+		echo '<div class="wcai-period" role="navigation" aria-label="' . esc_attr__( 'Time period', 'wc-ai-shopping-assistant' ) . '">';
+		foreach ( array( 7, 30, 90 ) as $d ) {
+			printf(
+				'<a class="%s" href="%s">%s</a>',
+				$d === $days ? 'is-active' : '',
+				esc_url( WCAI_Admin::url( $tab, array( 'days' => $d ) ) ),
+				esc_html(
+					sprintf(
+						/* translators: %d: number of days */
+						_n( '%d day', '%d days', $d, 'wc-ai-shopping-assistant' ),
+						$d
+					)
+				)
+			);
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Render analytics tab (inside hub wrap).
 	 */
 	public static function render_page(): void {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
-		$stats = self::stats( 30 );
+		$days  = self::request_days();
+		$stats = self::stats( $days );
+		self::render_period_chips( 'analytics', $days );
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html__( 'AI Analytics', 'wc-ai-shopping-assistant' ); ?></h1>
-			<p><?php echo esc_html__( 'Last 30 days. Query text is retained for 90 days then deleted automatically.', 'wc-ai-shopping-assistant' ); ?></p>
-			<ul>
-				<li><?php printf( /* translators: %d: count */ esc_html__( 'Queries: %d', 'wc-ai-shopping-assistant' ), (int) $stats['queries'] ); ?></li>
-				<li><?php printf( /* translators: %d: count */ esc_html__( 'Validated clicks: %d', 'wc-ai-shopping-assistant' ), (int) $stats['clicks'] ); ?></li>
-				<li><?php printf( /* translators: %s: percent */ esc_html__( 'CTR: %s%%', 'wc-ai-shopping-assistant' ), esc_html( (string) $stats['ctr'] ) ); ?></li>
-				<li><?php printf( /* translators: %d: count */ esc_html__( 'Unmatched: %d', 'wc-ai-shopping-assistant' ), (int) $stats['unmatched'] ); ?></li>
-				<li><?php printf( /* translators: 1: used 2: cap */ esc_html__( 'Monthly usage: %1$d / %2$d', 'wc-ai-shopping-assistant' ), (int) WCAI_Usage::used(), (int) WCAI_Usage::monthly_cap() ); ?></li>
-			</ul>
-			<h2><?php echo esc_html__( 'Top queries', 'wc-ai-shopping-assistant' ); ?></h2>
-			<table class="widefat striped">
-				<thead><tr><th><?php echo esc_html__( 'Query', 'wc-ai-shopping-assistant' ); ?></th><th><?php echo esc_html__( 'Count', 'wc-ai-shopping-assistant' ); ?></th></tr></thead>
-				<tbody>
-				<?php foreach ( $stats['top'] as $row ) : ?>
-					<tr>
-						<td><?php echo esc_html( $row['query_text'] ); ?></td>
-						<td><?php echo esc_html( (string) $row['cnt'] ); ?></td>
-					</tr>
-				<?php endforeach; ?>
-				</tbody>
-			</table>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %d: retention days */
+				esc_html__( 'Query text is retained for %d days then deleted automatically.', 'wc-ai-shopping-assistant' ),
+				(int) self::RETENTION_DAYS
+			);
+			?>
+		</p>
+
+		<div class="wcai-metrics">
+			<div class="wcai-metric">
+				<span class="wcai-metric__label"><?php esc_html_e( 'Queries', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-metric__value"><?php echo esc_html( (string) $stats['queries'] ); ?></span>
+			</div>
+			<div class="wcai-metric">
+				<span class="wcai-metric__label"><?php esc_html_e( 'Clicks', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-metric__value"><?php echo esc_html( (string) $stats['clicks'] ); ?></span>
+			</div>
+			<div class="wcai-metric">
+				<span class="wcai-metric__label"><?php esc_html_e( 'CTR', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-metric__value"><?php echo esc_html( (string) $stats['ctr'] ); ?>%</span>
+			</div>
+			<div class="wcai-metric">
+				<span class="wcai-metric__label"><?php esc_html_e( 'Unmatched', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-metric__value"><?php echo esc_html( (string) $stats['unmatched'] ); ?></span>
+			</div>
 		</div>
+
+		<p class="wcai-link-row">
+			<a href="<?php echo esc_url( WCAI_Admin::url( 'insights', array( 'days' => $days ) ) ); ?>">
+				<?php esc_html_e( 'View unmatched demand →', 'wc-ai-shopping-assistant' ); ?>
+			</a>
+		</p>
+
+		<section class="wcai-card">
+			<h2><?php esc_html_e( 'Top queries', 'wc-ai-shopping-assistant' ); ?></h2>
+			<?php if ( empty( $stats['top'] ) ) : ?>
+				<div class="wcai-empty-state">
+					<p><?php esc_html_e( 'No queries yet in this period. Shoppers’ searches will appear here once the assistant is live.', 'wc-ai-shopping-assistant' ); ?></p>
+				</div>
+			<?php else : ?>
+				<table class="widefat striped">
+					<thead><tr><th><?php esc_html_e( 'Query', 'wc-ai-shopping-assistant' ); ?></th><th><?php esc_html_e( 'Count', 'wc-ai-shopping-assistant' ); ?></th></tr></thead>
+					<tbody>
+					<?php foreach ( $stats['top'] as $row ) : ?>
+						<tr>
+							<td><?php echo esc_html( $row['query_text'] ); ?></td>
+							<td><?php echo esc_html( (string) $row['cnt'] ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php endif; ?>
+		</section>
 		<?php
 	}
 }

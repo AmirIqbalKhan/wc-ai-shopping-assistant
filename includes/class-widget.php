@@ -131,9 +131,16 @@ class WCAI_Widget {
 		}
 
 		wp_enqueue_style(
+			'wcai-outfit',
+			'https://fonts.bunny.net/css?family=outfit:400,500,600,700&display=swap',
+			array(),
+			null
+		);
+
+		wp_enqueue_style(
 			'wcai-widget',
 			WCAI_PLUGIN_URL . 'assets/css/widget.css',
-			array(),
+			array( 'wcai-outfit' ),
 			WCAI_VERSION
 		);
 
@@ -148,31 +155,47 @@ class WCAI_Widget {
 			true
 		);
 
+		$symbol = function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : '$';
+
 		wp_localize_script(
 			'wcai-widget',
 			'wcaiWidget',
 			array(
 				'restUrl'      => esc_url_raw( rest_url( 'wcai/v1/query' ) ),
 				'clickUrl'     => esc_url_raw( rest_url( 'wcai/v1/click' ) ),
+				'ajaxUrl'      => esc_url_raw( home_url( '/' ) ),
+				'cartNonce'    => wp_create_nonce( 'wc_store_api' ),
 				'nonce'        => wp_create_nonce( 'wp_rest' ),
-				'currency'     => function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : '$',
+				'currency'     => $symbol,
 				'hideBranding' => '1' === (string) WCAI_Settings::get( 'hide_branding', '0' ),
 				'accent'       => $accent,
+				'suggestions'  => array(
+					/* translators: %s: currency symbol */
+					sprintf( __( 'Under %s50', 'wc-ai-shopping-assistant' ), $symbol ),
+					__( 'Gift ideas', 'wc-ai-shopping-assistant' ),
+					__( 'Bestsellers', 'wc-ai-shopping-assistant' ),
+					__( 'Something new', 'wc-ai-shopping-assistant' ),
+				),
 				'i18n'         => array(
-					'title'         => $title,
-					'placeholder'   => __( 'Describe what you are looking for…', 'wc-ai-shopping-assistant' ),
+					'title'             => $title,
+					'placeholder'       => __( 'Describe what you are looking for…', 'wc-ai-shopping-assistant' ),
 					'searchPlaceholder' => __( 'Search with AI — e.g. rain jacket under $80', 'wc-ai-shopping-assistant' ),
-					'send'          => __( 'Send', 'wc-ai-shopping-assistant' ),
-					'search'        => __( 'Search', 'wc-ai-shopping-assistant' ),
-					'askAi'         => __( 'Ask AI', 'wc-ai-shopping-assistant' ),
-					'empty'         => __( 'Ask me to find products — e.g. “lightweight rain jacket under $80”. You can refine with follow-ups.', 'wc-ai-shopping-assistant' ),
-					'error'         => __( 'Something went wrong. Please try again.', 'wc-ai-shopping-assistant' ),
-					'thinking'      => __( 'Searching the catalog…', 'wc-ai-shopping-assistant' ),
-					'openLabel'     => __( 'Open shopping assistant', 'wc-ai-shopping-assistant' ),
-					'closeLabel'    => __( 'Close shopping assistant', 'wc-ai-shopping-assistant' ),
-					'poweredBy'     => __( 'Powered by AI Assistant', 'wc-ai-shopping-assistant' ),
-					'voice'         => __( 'Voice input', 'wc-ai-shopping-assistant' ),
-					'listening'     => __( 'Listening…', 'wc-ai-shopping-assistant' ),
+					'send'              => __( 'Send', 'wc-ai-shopping-assistant' ),
+					'search'            => __( 'Search', 'wc-ai-shopping-assistant' ),
+					'askAi'             => __( 'Ask AI', 'wc-ai-shopping-assistant' ),
+					'empty'             => __( 'Tell me what you need — budget, occasion, or style. Tap a suggestion or type your own.', 'wc-ai-shopping-assistant' ),
+					'error'             => __( 'Something went wrong. Please try again.', 'wc-ai-shopping-assistant' ),
+					'thinking'          => __( 'Searching the catalog…', 'wc-ai-shopping-assistant' ),
+					'openLabel'         => __( 'Open shopping assistant', 'wc-ai-shopping-assistant' ),
+					'closeLabel'        => __( 'Close shopping assistant', 'wc-ai-shopping-assistant' ),
+					'poweredBy'         => __( 'Powered by AI Assistant', 'wc-ai-shopping-assistant' ),
+					'voice'             => __( 'Voice input', 'wc-ai-shopping-assistant' ),
+					'listening'         => __( 'Listening…', 'wc-ai-shopping-assistant' ),
+					'addToCart'         => __( 'Add to cart', 'wc-ai-shopping-assistant' ),
+					'adding'            => __( 'Adding…', 'wc-ai-shopping-assistant' ),
+					'added'             => __( 'Added to cart', 'wc-ai-shopping-assistant' ),
+					'viewProduct'       => __( 'View product', 'wc-ai-shopping-assistant' ),
+					'cartError'         => __( 'Could not add to cart. Open the product page instead.', 'wc-ai-shopping-assistant' ),
 				),
 			)
 		);

@@ -15,6 +15,7 @@ $required = array(
 	'includes/class-installer.php',
 	'includes/class-session.php',
 	'includes/class-settings.php',
+	'includes/class-admin.php',
 	'includes/class-openai-client.php',
 	'includes/class-indexer.php',
 	'includes/class-hooks.php',
@@ -33,6 +34,7 @@ $required = array(
 	'assets/js/widget.js',
 	'assets/js/admin.js',
 	'assets/css/widget.css',
+	'assets/css/admin.css',
 	'blocks/ai-assistant-block/block.json',
 	'blocks/ai-assistant-block/editor.js',
 	'docs/README.md',
@@ -66,7 +68,7 @@ foreach ($map as $class => $file) {
 }
 
 $widget = file_get_contents($root . '/assets/js/widget.js');
-foreach (array('session_token', 'SpeechRecognition', 'clickUrl', 'sessionStorage') as $needle) {
+foreach (array('session_token', 'SpeechRecognition', 'clickUrl', 'sessionStorage', 'add_to_cart', "setAttribute('role', 'dialog')") as $needle) {
 	if (strpos($widget, $needle) === false) {
 		echo "FAIL widget missing {$needle}\n";
 		$failures++;
