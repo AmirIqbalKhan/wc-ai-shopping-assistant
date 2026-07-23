@@ -1,0 +1,15 @@
+{
+  "apiVersion": 2,
+  "name": "wcai/ai-assistant",
+  "title": "AI Shopping Assistant",
+  "category": "woocommerce",
+  "icon": "format-chat",
+  "description": "Embed the conversational product finder on any page.",
+  "keywords": ["woocommerce", "ai", "chat", "assistant"],
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "textdomain": "wc-ai-shopping-assistant",
+  "editorScript": "file:./editor.js"
+}

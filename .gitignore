@@ -1,0 +1,11 @@
+# Exclude OS / editor noise from the plugin repository
+.DS_Store
+Thumbs.db
+*.zip
+.idea/
+.vscode/
+*.log
+node_modules/
+vendor/
+.env
+.env.*
