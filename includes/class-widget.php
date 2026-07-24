@@ -35,7 +35,9 @@ class WCAI_Widget {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'maybe_enqueue' ) );
 		add_action( 'wp_footer', array( __CLASS__, 'render_floating_root' ) );
 		add_action( 'wp_body_open', array( __CLASS__, 'maybe_auto_insert_search' ), 20 );
-		add_shortcode( 'wc_ai_assistant', array( __CLASS__, 'shortcode' ) );
+		add_shortcode( 'shopask_ai', array( __CLASS__, 'shortcode' ) );
+		add_shortcode( 'shopask_assistant', array( __CLASS__, 'shortcode' ) );
+		add_shortcode( 'wc_ai_assistant', array( __CLASS__, 'shortcode' ) ); // Legacy alias.
 		add_action( 'init', array( __CLASS__, 'register_block' ) );
 	}
 
@@ -60,26 +62,28 @@ class WCAI_Widget {
 			true
 		);
 
-		register_block_type(
-			$block_dir,
-			array(
-				'editor_script'   => 'wcai-ai-assistant-editor',
-				'render_callback' => array( __CLASS__, 'render_block' ),
-				'attributes'      => array(
-					'type'  => array(
-						'type'    => 'string',
-						'default' => 'panel',
-					),
-					'label' => array(
-						'type'    => 'string',
-						'default' => '',
-					),
-					'align' => array(
-						'type' => 'string',
-					),
+		$block_args = array(
+			'editor_script'   => 'wcai-ai-assistant-editor',
+			'render_callback' => array( __CLASS__, 'render_block' ),
+			'attributes'      => array(
+				'type'  => array(
+					'type'    => 'string',
+					'default' => 'panel',
 				),
-			)
+				'label' => array(
+					'type'    => 'string',
+					'default' => '',
+				),
+				'align' => array(
+					'type' => 'string',
+				),
+			),
 		);
+
+		register_block_type( $block_dir, $block_args );
+
+		// Legacy block name for content saved before the ShopAsk rename.
+		register_block_type( 'wcai/ai-assistant', $block_args );
 	}
 
 	/**
@@ -118,11 +122,19 @@ class WCAI_Widget {
 
 		global $post;
 		if ( $post instanceof WP_Post ) {
-			if ( has_shortcode( (string) $post->post_content, 'wc_ai_assistant' ) ) {
+			$content = (string) $post->post_content;
+			if (
+				has_shortcode( $content, 'shopask_ai' )
+				|| has_shortcode( $content, 'shopask_assistant' )
+				|| has_shortcode( $content, 'wc_ai_assistant' )
+			) {
 				self::ensure_assets();
 				return;
 			}
-			if ( function_exists( 'has_block' ) && has_block( 'wcai/ai-assistant', $post ) ) {
+			if (
+				function_exists( 'has_block' )
+				&& ( has_block( 'shopask/ai-assistant', $post ) || has_block( 'wcai/ai-assistant', $post ) )
+			) {
 				self::ensure_assets();
 			}
 		}
@@ -139,7 +151,7 @@ class WCAI_Widget {
 
 		$title = (string) WCAI_Settings::get( 'widget_title', '' );
 		if ( '' === $title ) {
-			$title = __( 'Shopping Assistant', 'shopask-ai-shopping-assistant' );
+			$title = __( 'ShopAsk AI', 'shopask-ai-shopping-assistant' );
 		}
 
 		wp_enqueue_style(
@@ -166,8 +178,8 @@ class WCAI_Widget {
 			'wcai-widget',
 			'wcaiWidget',
 			array(
-				'restUrl'      => esc_url_raw( rest_url( 'wcai/v1/query' ) ),
-				'clickUrl'     => esc_url_raw( rest_url( 'wcai/v1/click' ) ),
+				'restUrl'      => esc_url_raw( rest_url( 'shopask/v1/query' ) ),
+				'clickUrl'     => esc_url_raw( rest_url( 'shopask/v1/click' ) ),
 				'ajaxUrl'      => esc_url_raw( home_url( '/' ) ),
 				'cartNonce'    => wp_create_nonce( 'wc_store_api' ),
 				'nonce'        => wp_create_nonce( 'wp_rest' ),
@@ -184,16 +196,16 @@ class WCAI_Widget {
 				'i18n'         => array(
 					'title'             => $title,
 					'placeholder'       => __( 'Describe what you are looking for…', 'shopask-ai-shopping-assistant' ),
-					'searchPlaceholder' => __( 'Search with AI — e.g. rain jacket under $80', 'shopask-ai-shopping-assistant' ),
+					'searchPlaceholder' => __( 'Ask ShopAsk — e.g. rain jacket under $80', 'shopask-ai-shopping-assistant' ),
 					'send'              => __( 'Send', 'shopask-ai-shopping-assistant' ),
 					'search'            => __( 'Search', 'shopask-ai-shopping-assistant' ),
-					'askAi'             => __( 'Ask AI', 'shopask-ai-shopping-assistant' ),
+					'askAi'             => __( 'Ask ShopAsk', 'shopask-ai-shopping-assistant' ),
 					'empty'             => __( 'Tell me what you need — budget, occasion, or style. Tap a suggestion or type your own.', 'shopask-ai-shopping-assistant' ),
 					'error'             => __( 'Something went wrong. Please try again.', 'shopask-ai-shopping-assistant' ),
 					'thinking'          => __( 'Searching the catalog…', 'shopask-ai-shopping-assistant' ),
-					'openLabel'         => __( 'Open shopping assistant', 'shopask-ai-shopping-assistant' ),
-					'closeLabel'        => __( 'Close shopping assistant', 'shopask-ai-shopping-assistant' ),
-					'poweredBy'         => __( 'Powered by AI Assistant', 'shopask-ai-shopping-assistant' ),
+					'openLabel'         => __( 'Open ShopAsk AI', 'shopask-ai-shopping-assistant' ),
+					'closeLabel'        => __( 'Close ShopAsk AI', 'shopask-ai-shopping-assistant' ),
+					'poweredBy'         => __( 'Powered by ShopAsk AI', 'shopask-ai-shopping-assistant' ),
 					'voice'             => __( 'Voice input', 'shopask-ai-shopping-assistant' ),
 					'listening'         => __( 'Listening…', 'shopask-ai-shopping-assistant' ),
 					'addToCart'         => __( 'Add to cart', 'shopask-ai-shopping-assistant' ),
@@ -232,7 +244,7 @@ class WCAI_Widget {
 	}
 
 	/**
-	 * Shortcode: [wc_ai_assistant type="search|button|panel|floating" label="..." class="..."]
+	 * Shortcode: [shopask_ai type="search|button|panel|floating" label="..." class="..."]
 	 *
 	 * @param array|string $atts Attributes.
 	 * @return string
@@ -249,7 +261,7 @@ class WCAI_Widget {
 				'class' => '',
 			),
 			is_array( $atts ) ? $atts : array(),
-			'wc_ai_assistant'
+			'shopask_ai'
 		);
 
 		$type = sanitize_key( $atts['type'] );

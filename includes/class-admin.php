@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * WooCommerce â†’ AI Assistant admin shell.
+ * WooCommerce → ShopAsk AI admin shell.
  */
 class WCAI_Admin {
 
@@ -20,7 +20,7 @@ class WCAI_Admin {
 	}
 
 	/**
-	 * Whether current screen is the AI Assistant hub.
+	 * Whether current screen is the ShopAsk AI hub.
 	 *
 	 * @param string $hook Hook suffix.
 	 * @return bool
@@ -96,8 +96,8 @@ class WCAI_Admin {
 			'wcai-admin',
 			'wcaiAdmin',
 			array(
-				'statusUrl'      => esc_url_raw( rest_url( 'wcai/v1/reindex-status' ) ),
-				'testUrl'        => esc_url_raw( rest_url( 'wcai/v1/test-connection' ) ),
+				'statusUrl'      => esc_url_raw( rest_url( 'shopask/v1/reindex-status' ) ),
+				'testUrl'        => esc_url_raw( rest_url( 'shopask/v1/test-connection' ) ),
 				'nonce'          => wp_create_nonce( 'wp_rest' ),
 				'providers'      => $providers,
 				'tab'            => self::current_tab(),
@@ -129,7 +129,7 @@ class WCAI_Admin {
 			'analytics' => __( 'Analytics', 'shopask-ai-shopping-assistant' ),
 			'insights'  => __( 'Insights', 'shopask-ai-shopping-assistant' ),
 		);
-		echo '<nav class="wcai-admin-tabs" aria-label="' . esc_attr__( 'AI Assistant sections', 'shopask-ai-shopping-assistant' ) . '">';
+		echo '<nav class="wcai-admin-tabs" aria-label="' . esc_attr__( 'ShopAsk AI sections', 'shopask-ai-shopping-assistant' ) . '">';
 		foreach ( $tabs as $id => $label ) {
 			printf(
 				'<a class="wcai-admin-tabs__item%s" href="%s">%s</a>',

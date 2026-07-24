@@ -1,11 +1,11 @@
 {
   "apiVersion": 3,
-  "name": "wcai/ai-assistant",
-  "title": "ShopAsk AI Shopping Assistant",
+  "name": "shopask/ai-assistant",
+  "title": "ShopAsk AI",
   "category": "woocommerce",
   "icon": "format-chat",
-  "description": "Add an AI search bar, Ask AI button, chat panel, or floating bubble anywhere.",
-  "keywords": ["woocommerce", "ai", "chat", "assistant", "search"],
+  "description": "Add a ShopAsk search bar, Ask ShopAsk button, chat panel, or floating bubble anywhere.",
+  "keywords": ["woocommerce", "ai", "chat", "assistant", "search", "shopask"],
   "supports": {
     "html": false,
     "align": ["wide", "full"]

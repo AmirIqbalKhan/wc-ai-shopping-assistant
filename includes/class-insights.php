@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 class WCAI_Insights {
 
 	/**
-	 * Hook (UI is served via AI Assistant hub tabs).
+	 * Hook (UI is served via ShopAsk AI hub tabs).
 	 */
 	public static function init(): void {
 		// Intentionally no separate submenu — see WCAI_Settings::render_page().

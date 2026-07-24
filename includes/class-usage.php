@@ -204,7 +204,7 @@ class WCAI_Usage {
 			if ( $daily > 0 && self::used_today() >= $daily ) {
 				return new WP_Error(
 					'wcai_daily_limit',
-					__( 'The store’s daily AI assistant query limit has been reached. Please try again tomorrow.', 'shopask-ai-shopping-assistant' ),
+					__( 'The store’s daily ShopAsk AI query limit has been reached. Please try again tomorrow.', 'shopask-ai-shopping-assistant' ),
 					array( 'status' => 429 )
 				);
 			}
@@ -212,7 +212,7 @@ class WCAI_Usage {
 			if ( $monthly > 0 && self::used() >= $monthly ) {
 				return new WP_Error(
 					'wcai_monthly_limit',
-					__( 'The store’s monthly AI assistant query limit has been reached.', 'shopask-ai-shopping-assistant' ),
+					__( 'The store’s monthly ShopAsk AI query limit has been reached.', 'shopask-ai-shopping-assistant' ),
 					array( 'status' => 429 )
 				);
 			}

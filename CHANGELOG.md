@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.9
+
+- Full **ShopAsk AI** branding across admin menu, storefront copy, shortcodes, Gutenberg block, REST (`shopask/v1`), API key header, and docs
+- Primary shortcode `[shopask_ai]` (legacy `[wc_ai_assistant]` still works); block `shopask/ai-assistant`
+
 ## 0.3.8
 
 - Trademark-safe rename: **ShopAsk AI – Shopping Assistant for WooCommerce** (`shopask-ai-shopping-assistant` slug / text domain / main file)
@@ -14,7 +19,7 @@
 
 - WordPress.org readiness: `readme.txt`, External services / Privacy disclosure, full GPLv2 LICENSE
 - Self-host Outfit fonts (SIL OFL); remove Bunny Fonts CDN
-- Harden `POST /wcai/v1/query` with REST nonce; daily query soft-cap (default 500); public search API key via header only
+- Harden `POST /shopask/v1/query` with REST nonce; daily query soft-cap (default 500); public search API key via header only
 - Privacy policy text expanded; uninstall cleans user meta, debounce transients, Action Scheduler jobs
 - `load_plugin_textdomain`, shortcode/block asset detection, a11y label + focus return
 
@@ -25,7 +30,7 @@
 ## 0.3.4
 
 - Premium storefront UI: Outfit typography, mobile chat sheet, suggestion chips, skeleton thinking, richer product cards with Add to cart
-- Unified WooCommerce → AI Assistant hub with Settings / Analytics / Insights tabs, status strip, and polished admin flows
+- Unified WooCommerce → ShopAsk AI hub with Settings / Analytics / Insights tabs, status strip, and polished admin flows
 
 ## 0.3.3
 
@@ -40,7 +45,7 @@
 
 ## 0.3.1
 
-- Flexible widgets: AI search bar, Ask AI button, embedded panel, floating bubble
+- Flexible widgets: AI search bar, Ask ShopAsk button, embedded panel, floating bubble
 - Shortcode `type` / `label` attributes and Gutenberg layout picker
 - Settings for site-wide floating toggle and optional auto-insert search bar
 

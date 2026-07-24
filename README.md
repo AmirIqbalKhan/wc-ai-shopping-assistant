@@ -21,7 +21,7 @@ WordPress.org directory metadata lives in [`readme.txt`](readme.txt) (including 
 - **Grounded answers only** — the model may only recommend IDs returned from your indexed catalog
 - **Live price & stock** at render time (protects against stale index data)
 - **Per-product reasons** explaining why each item matched
-- **Floating bubble**, **inline AI search bar**, **Ask AI button**, and **embedded chat panel** — place via shortcode, Gutenberg block, or auto-insert near the header
+- **Floating bubble**, **inline ShopAsk search bar**, **Ask ShopAsk button**, and **embedded chat panel** — place via shortcode, Gutenberg block, or auto-insert near the header
 - **Voice input** (Web Speech API) where the browser supports it
 
 ### Catalog intelligence
@@ -70,7 +70,7 @@ Choose your chat provider from settings:
 1. Download the latest release ZIP (or zip the plugin folder).
 2. In WP Admin go to **Plugins → Add New → Upload Plugin**.
 3. Upload `shopask-ai-shopping-assistant.zip`, install, and activate.
-4. Open **WooCommerce → AI Assistant**.
+4. Open **WooCommerce → ShopAsk AI**.
 5. Select your **AI provider**, paste the **API key**, confirm model + base URL.
 6. Click **Reindex Catalog** and wait for the progress bar to finish.
 7. Visit the storefront — the chat bubble appears when floating mode is enabled.
@@ -88,7 +88,7 @@ Then activate in **Plugins** and follow the settings steps above.
 
 ## Quick configuration
 
-**WooCommerce → AI Assistant**
+**WooCommerce → ShopAsk AI**
 
 1. **AI provider** — OpenAI, Claude, Gemini, LongCat, OpenRouter, or Custom  
 2. **API key** — from your provider dashboard (leave blank on later saves to keep the existing key)  
@@ -118,49 +118,49 @@ Place the assistant wherever you want on your site — hero, header/nav area, ho
 
 | Type | Shortcode | Best for |
 |------|-----------|----------|
-| **Search bar** | `[wc_ai_assistant type="search"]` | Hero, header, any content section |
-| **Button** | `[wc_ai_assistant type="button" label="Ask AI"]` | CTAs anywhere on the site |
-| **Chat panel** | `[wc_ai_assistant type="panel"]` | Dedicated page or full-width section |
-| **Floating** | `[wc_ai_assistant type="floating"]` | Page-local floating bubble |
+| **Search bar** | `[shopask_ai type="search"]` | Hero, header, any content section |
+| **Button** | `[shopask_ai type="button" label="Ask ShopAsk"]` | CTAs anywhere on the site |
+| **Chat panel** | `[shopask_ai type="panel"]` | Dedicated page or full-width section |
+| **Floating** | `[shopask_ai type="floating"]` | Page-local floating bubble |
 
-Site-wide floating bubble can also be toggled in **WooCommerce → AI Assistant → Floating button** (no shortcode needed).
+Site-wide floating bubble can also be toggled in **WooCommerce → ShopAsk AI → Floating button** (no shortcode needed).
 
 ### Examples
 
 **Hero / homepage search**
 
 ```
-[wc_ai_assistant type="search"]
+[shopask_ai type="search"]
 ```
 
 **Header or banner CTA**
 
 ```
-[wc_ai_assistant type="button" label="Find products with AI"]
+[shopask_ai type="button" label="Find products with ShopAsk"]
 ```
 
 **Full embedded assistant on a “Help me shop” page**
 
 ```
-[wc_ai_assistant type="panel"]
+[shopask_ai type="panel"]
 ```
 
 ### Gutenberg block
 
 1. Edit any page or post.  
-2. Insert the **AI Shopping Assistant** block.  
+2. Insert the **ShopAsk AI** block.  
 3. In the sidebar, choose layout: **Search bar**, **Button**, **Chat panel**, or **Floating**.  
 4. Optionally set a custom button/search label.
 
 ### Settings options
 
-Under **WooCommerce → AI Assistant → Widget & placement**:
+Under **WooCommerce → ShopAsk AI → Widget & placement**:
 
-- **Floating button** — show or hide the site-wide AI bubble  
+- **Floating button** — show or hide the site-wide ShopAsk bubble  
 - **Auto-insert search bar** — off, or insert near the top of the page (after `body` opens / near header)  
 - Or leave auto-insert off and place widgets yourself with shortcodes or the block  
 
-Custom label example: `[wc_ai_assistant type="button" label="Ask our stylist"]`
+Custom label example: `[shopask_ai type="button" label="Ask our stylist"]`
 
 ---
 
@@ -178,7 +178,7 @@ WooCommerce product CRUD
 Shopper message
         │
         ▼
-  REST /wcai/v1/query
+  REST /shopask/v1/query
         │
         ├─► Session (constraints, history, shown IDs)
         ├─► Hybrid retrieval (prefilter + cosine)
@@ -197,14 +197,14 @@ Shopper message
 
 | Screen | Purpose |
 |--------|---------|
-| **WooCommerce → AI Assistant** | Provider, models, placement, white-label, reindex |
-| **WooCommerce → AI Analytics** | Queries, clicks, CTR, top queries |
-| **WooCommerce → AI Insights** | Unmatched shopper intents / catalog gaps |
+| **WooCommerce → ShopAsk AI** | Provider, models, placement, white-label, reindex |
+| **WooCommerce → ShopAsk AI → Analytics** | Queries, clicks, CTR, top queries |
+| **WooCommerce → ShopAsk AI → Insights** | Unmatched shopper intents / catalog gaps |
 
 ### Analytics events
 
 - Every shopper query is logged (text + result count + match flag). Query text can contain personal details and is retained for **90 days**, then deleted. Privacy exporters/erasers are registered.
-- Product card clicks call `POST /wp-json/wcai/v1/click` for CTR.
+- Product card clicks call `POST /wp-json/shopask/v1/click` for CTR.
 - Unmatched queries feed the Insights dashboard for inventory planning.
 
 ---
@@ -213,7 +213,7 @@ Shopper message
 
 ### Chat (storefront)
 
-`POST /wp-json/wcai/v1/query`
+`POST /wp-json/shopask/v1/query`
 
 ```json
 {
@@ -224,7 +224,7 @@ Shopper message
 
 ### Click tracking
 
-`POST /wp-json/wcai/v1/click`
+`POST /wp-json/shopask/v1/click`
 
 ```json
 {
@@ -236,12 +236,12 @@ Shopper message
 
 ### Public search (themes / apps)
 
-`GET|POST /wp-json/wcai/v1/search`
+`GET|POST /wp-json/shopask/v1/search`
 
 Authenticate with a user who can `manage_woocommerce`, **or** send header:
 
 ```
-X-WCAI-API-Key: <public_api_key from settings>
+X-ShopAsk-API-Key: <public_api_key from settings>
 ```
 
 ### Webhook

@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * WooCommerce → AI Assistant settings.
+ * WooCommerce → ShopAsk AI settings.
  */
 class WCAI_Settings {
 
@@ -28,8 +28,8 @@ class WCAI_Settings {
 	public static function register_menu(): void {
 		add_submenu_page(
 			'woocommerce',
-			__( 'AI Assistant', 'shopask-ai-shopping-assistant' ),
-			__( 'AI Assistant', 'shopask-ai-shopping-assistant' ),
+			__( 'ShopAsk AI', 'shopask-ai-shopping-assistant' ),
+			__( 'ShopAsk AI', 'shopask-ai-shopping-assistant' ),
 			'manage_woocommerce',
 			'wcai-settings',
 			array( __CLASS__, 'render_page' )
@@ -269,7 +269,7 @@ class WCAI_Settings {
 	}
 
 	/**
-	 * Render AI Assistant hub (settings / analytics / insights tabs).
+	 * Render ShopAsk AI hub (settings / analytics / insights tabs).
 	 */
 	public static function render_page(): void {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
@@ -401,7 +401,7 @@ class WCAI_Settings {
 						<td>
 							<label>
 								<input type="checkbox" name="wcai_settings[show_floating]" value="1" <?php checked( $settings['show_floating'] ?? '1', '1' ); ?> />
-								<?php esc_html_e( 'Show site-wide floating AI bubble', 'shopask-ai-shopping-assistant' ); ?>
+								<?php esc_html_e( 'Show site-wide floating ShopAsk bubble', 'shopask-ai-shopping-assistant' ); ?>
 							</label>
 						</td>
 					</tr>
@@ -418,15 +418,16 @@ class WCAI_Settings {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Shortcodes', 'shopask-ai-shopping-assistant' ); ?></th>
 						<td>
-							<p><code>[wc_ai_assistant type="search"]</code> — <?php esc_html_e( 'AI search bar (hero / header / any section)', 'shopask-ai-shopping-assistant' ); ?></p>
-							<p><code>[wc_ai_assistant type="button" label="Ask AI"]</code> — <?php esc_html_e( 'Button that opens the assistant', 'shopask-ai-shopping-assistant' ); ?></p>
-							<p><code>[wc_ai_assistant type="panel"]</code> — <?php esc_html_e( 'Full embedded chat panel', 'shopask-ai-shopping-assistant' ); ?></p>
-							<p><code>[wc_ai_assistant type="floating"]</code> — <?php esc_html_e( 'Local floating bubble on that page', 'shopask-ai-shopping-assistant' ); ?></p>
+							<p><code>[shopask_ai type="search"]</code> — <?php esc_html_e( 'ShopAsk search bar (hero / header / any section)', 'shopask-ai-shopping-assistant' ); ?></p>
+							<p><code>[shopask_ai type="button" label="Ask ShopAsk"]</code> — <?php esc_html_e( 'Button that opens the assistant', 'shopask-ai-shopping-assistant' ); ?></p>
+							<p><code>[shopask_ai type="panel"]</code> — <?php esc_html_e( 'Full embedded chat panel', 'shopask-ai-shopping-assistant' ); ?></p>
+							<p><code>[shopask_ai type="floating"]</code> — <?php esc_html_e( 'Local floating bubble on that page', 'shopask-ai-shopping-assistant' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Legacy shortcode [wc_ai_assistant] still works.', 'shopask-ai-shopping-assistant' ); ?></p>
 						</td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="wcai_widget_title"><?php esc_html_e( 'Widget title', 'shopask-ai-shopping-assistant' ); ?></label></th>
-						<td><input type="text" class="regular-text" id="wcai_widget_title" name="wcai_settings[widget_title]" value="<?php echo esc_attr( $settings['widget_title'] ); ?>" placeholder="<?php esc_attr_e( 'Shopping Assistant', 'shopask-ai-shopping-assistant' ); ?>" /></td>
+						<td><input type="text" class="regular-text" id="wcai_widget_title" name="wcai_settings[widget_title]" value="<?php echo esc_attr( $settings['widget_title'] ); ?>" placeholder="<?php esc_attr_e( 'ShopAsk AI', 'shopask-ai-shopping-assistant' ); ?>" /></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="wcai_accent"><?php esc_html_e( 'Accent color', 'shopask-ai-shopping-assistant' ); ?></label></th>

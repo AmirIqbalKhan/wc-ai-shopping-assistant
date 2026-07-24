@@ -37,9 +37,9 @@ See `ARCHITECTURE.md` for the full technical design and `AGENT_DESIGN.md` for ho
 
 1. Clone or copy the plugin into `wp-content/plugins/shopask-ai-shopping-assistant`
 2. Activate the plugin from the WordPress admin Plugins screen
-3. Go to **WooCommerce → AI Assistant → Settings** and add your AI provider API key
+3. Go to **WooCommerce → ShopAsk AI → Settings** and add your AI provider API key
 4. Trigger the initial catalog index from the settings screen (**Reindex Catalog**), or let it run automatically on first activation
-5. Add the assistant widget via the provided Gutenberg block, shortcode `[wc_ai_assistant]`, or enable the site-wide floating widget in settings
+5. Add the assistant widget via the provided Gutenberg block, shortcode `[shopask_ai]`, or enable the site-wide floating widget in settings
 
 ## Project structure (proposed)
 

@@ -85,7 +85,7 @@ add_action( 'wcai_reindex_product', function ( $product_id ) {
 
 ## 4. Retrieval flow (per chat query)
 
-1. Shopper submits a query via the widget → REST endpoint (`/wp-json/wcai/v1/query`)
+1. Shopper submits a query via the widget → REST endpoint (`/wp-json/shopask/v1/query`)
 2. Lightweight pre-filter (optional): stock status = in stock, price bounds if the query mentions a budget, category hints if mentioned
 3. Query text is embedded using the same embedding model used for indexing
 4. Cosine similarity (or provider-native vector search) ranks indexed products against the query embedding

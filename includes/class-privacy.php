@@ -53,7 +53,7 @@ class WCAI_Privacy {
 			return;
 		}
 		$content = __(
-			'When you use the on-site AI shopping assistant, your search text (up to 500 characters) and a session token may be stored in this site’s database for analytics for up to 90 days. The same search text, together with short product catalog snippets (titles and descriptions), may be sent to the AI provider configured by the store owner (for example OpenAI, Anthropic Claude, Google Gemini, LongCat, OpenRouter, or a custom API base URL) so the assistant can return product recommendations. Catalog indexing may also send product titles and descriptions to that provider to create search embeddings. If the store owner enables an optional webhook, search-related data may be sent to the HTTPS URL they configure. Recommendations are limited to products in the store catalog. This plugin does not send data to the plugin author’s servers.',
+			'When you use ShopAsk AI on this site, your search text (up to 500 characters) and a session token may be stored in this site’s database for analytics for up to 90 days. The same search text, together with short product catalog snippets (titles and descriptions), may be sent to the AI provider configured by the store owner (for example OpenAI, Anthropic Claude, Google Gemini, LongCat, OpenRouter, or a custom API base URL) so ShopAsk can return product recommendations. Catalog indexing may also send product titles and descriptions to that provider to create search embeddings. If the store owner enables an optional webhook, search-related data may be sent to the HTTPS URL they configure. Recommendations are limited to products in the store catalog. This plugin does not send data to the plugin author’s servers.',
 			'shopask-ai-shopping-assistant'
 		);
 		wp_add_privacy_policy_content( 'ShopAsk AI – Shopping Assistant for WooCommerce', wp_kses_post( wpautop( $content ) ) );
@@ -99,7 +99,7 @@ class WCAI_Privacy {
 		$export = array();
 		foreach ( $rows as $row ) {
 			$export[] = array(
-				'name'  => __( 'AI assistant query', 'shopask-ai-shopping-assistant' ),
+				'name'  => __( 'ShopAsk AI query', 'shopask-ai-shopping-assistant' ),
 				'value' => (string) $row['query_text'] . ' @ ' . (string) $row['created_at'],
 			);
 		}
@@ -108,10 +108,10 @@ class WCAI_Privacy {
 			'data' => $export
 				? array(
 					array(
-						'group_id'          => 'wcai',
-						'group_label'       => __( 'AI Shopping Assistant', 'shopask-ai-shopping-assistant' ),
-						'group_description' => __( 'Queries submitted to the shopping assistant.', 'shopask-ai-shopping-assistant' ),
-						'item_id'           => 'wcai-queries',
+						'group_id'          => 'shopask',
+						'group_label'       => __( 'ShopAsk AI', 'shopask-ai-shopping-assistant' ),
+						'group_description' => __( 'Queries submitted to ShopAsk AI.', 'shopask-ai-shopping-assistant' ),
+						'item_id'           => 'shopask-queries',
 						'data'              => $export,
 					),
 				)
@@ -161,7 +161,7 @@ class WCAI_Privacy {
 		return array(
 			'items_removed'  => true,
 			'items_retained' => false,
-			'messages'       => array( __( 'AI assistant query and click logs removed for this user session.', 'shopask-ai-shopping-assistant' ) ),
+			'messages'       => array( __( 'ShopAsk AI query and click logs removed for this user session.', 'shopask-ai-shopping-assistant' ) ),
 			'done'           => true,
 		);
 	}

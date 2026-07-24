@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Registers /wcai/v1 routes and durable rate limiting.
+ * Registers /shopask/v1 routes (and legacy /wcai/v1) plus durable rate limiting.
  */
 class WCAI_REST {
 
@@ -20,13 +20,11 @@ class WCAI_REST {
 	}
 
 	/**
-	 * Register endpoints.
+	 * Register endpoints under ShopAsk and legacy WCAI namespaces.
 	 */
 	public static function register_routes(): void {
-		register_rest_route(
-			'wcai/v1',
-			'/query',
-			array(
+		$routes = array(
+			'/query'            => array(
 				'methods'             => 'POST',
 				'callback'            => array( __CLASS__, 'handle_query' ),
 				'permission_callback' => array( __CLASS__, 'query_permission' ),
@@ -42,13 +40,8 @@ class WCAI_REST {
 						'sanitize_callback' => 'sanitize_text_field',
 					),
 				),
-			)
-		);
-
-		register_rest_route(
-			'wcai/v1',
-			'/click',
-			array(
+			),
+			'/click'            => array(
 				'methods'             => 'POST',
 				'callback'            => array( __CLASS__, 'handle_click' ),
 				'permission_callback' => '__return_true',
@@ -67,13 +60,8 @@ class WCAI_REST {
 						'sanitize_callback' => 'sanitize_text_field',
 					),
 				),
-			)
-		);
-
-		register_rest_route(
-			'wcai/v1',
-			'/search',
-			array(
+			),
+			'/search'           => array(
 				'methods'             => array( 'GET', 'POST' ),
 				'callback'            => array( __CLASS__, 'handle_public_search' ),
 				'permission_callback' => array( __CLASS__, 'public_search_permission' ),
@@ -89,32 +77,28 @@ class WCAI_REST {
 						'sanitize_callback' => 'sanitize_text_field',
 					),
 				),
-			)
-		);
-
-		register_rest_route(
-			'wcai/v1',
-			'/reindex-status',
-			array(
+			),
+			'/reindex-status'   => array(
 				'methods'             => 'GET',
 				'callback'            => array( __CLASS__, 'handle_reindex_status' ),
 				'permission_callback' => static function () {
 					return current_user_can( 'manage_woocommerce' );
 				},
-			)
-		);
-
-		register_rest_route(
-			'wcai/v1',
-			'/test-connection',
-			array(
+			),
+			'/test-connection'  => array(
 				'methods'             => 'POST',
 				'callback'            => array( __CLASS__, 'handle_test_connection' ),
 				'permission_callback' => static function () {
 					return current_user_can( 'manage_woocommerce' );
 				},
-			)
+			),
 		);
+
+		foreach ( array( 'shopask/v1', 'wcai/v1' ) as $namespace ) {
+			foreach ( $routes as $route => $args ) {
+				register_rest_route( $namespace, $route, $args );
+			}
+		}
 	}
 
 	/**
@@ -136,7 +120,7 @@ class WCAI_REST {
 	}
 
 	/**
-	 * Permission for public search: manage_woocommerce or X-WCAI-API-Key header only.
+	 * Permission for public search: manage_woocommerce or ShopAsk / legacy API key header.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return bool
@@ -149,8 +133,13 @@ class WCAI_REST {
 		if ( '' === $key ) {
 			return false;
 		}
-		$provided = $request->get_header( 'X-WCAI-API-Key' );
-		return is_string( $provided ) && '' !== $provided && hash_equals( $key, $provided );
+		foreach ( array( 'X-ShopAsk-API-Key', 'X-WCAI-API-Key' ) as $header ) {
+			$provided = $request->get_header( $header );
+			if ( is_string( $provided ) && '' !== $provided && hash_equals( $key, $provided ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -173,7 +162,7 @@ class WCAI_REST {
 		if ( ! WCAI_Settings::get( 'api_key' ) ) {
 			return new WP_Error(
 				'wcai_not_configured',
-				__( 'The AI assistant is not configured yet.', 'shopask-ai-shopping-assistant' ),
+				__( 'ShopAsk AI is not configured yet.', 'shopask-ai-shopping-assistant' ),
 				array( 'status' => 503 )
 			);
 		}

@@ -15,7 +15,7 @@ class WCAI_Analytics {
 	const RETENTION_DAYS = 90;
 
 	/**
-	 * Hook cleanup (UI is served via AI Assistant hub tabs).
+	 * Hook cleanup (UI is served via ShopAsk AI hub tabs).
 	 */
 	public static function init(): void {
 		// Intentionally no separate submenu — see WCAI_Settings::render_page().
@@ -360,7 +360,7 @@ class WCAI_Analytics {
 			<h2><?php esc_html_e( 'Top queries', 'shopask-ai-shopping-assistant' ); ?></h2>
 			<?php if ( empty( $stats['top'] ) ) : ?>
 				<div class="wcai-empty-state">
-					<p><?php esc_html_e( 'No queries yet in this period. Shoppers’ searches will appear here once the assistant is live.', 'shopask-ai-shopping-assistant' ); ?></p>
+					<p><?php esc_html_e( 'No queries yet in this period. Shoppers’ searches will appear here once ShopAsk AI is live.', 'shopask-ai-shopping-assistant' ); ?></p>
 				</div>
 			<?php else : ?>
 				<table class="widefat striped">

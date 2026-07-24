@@ -3,7 +3,7 @@
  * Plugin Name:       ShopAsk AI – Shopping Assistant for WooCommerce
  * Plugin URI:        https://github.com/AmirIqbalKhan/wc-ai-shopping-assistant
  * Description:       Conversational, natural-language product finder for WooCommerce stores.
- * Version:           0.3.8
+ * Version:           0.3.9
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * WC requires at least: 8.0
@@ -22,7 +22,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WCAI_VERSION', '0.3.8' );
+define( 'WCAI_VERSION', '0.3.9' );
 define( 'WCAI_PLUGIN_FILE', __FILE__ );
 define( 'WCAI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WCAI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

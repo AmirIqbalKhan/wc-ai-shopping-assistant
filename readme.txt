@@ -4,7 +4,7 @@ Tags: woocommerce, ai, search, shopping assistant, product finder
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.3.8
+Stable tag: 0.3.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,7 +22,7 @@ This plugin is an independent product and is not affiliated with or endorsed by 
 * Clarifying questions when intent is unclear
 * Grounded answers — only products from your indexed catalog
 * Live price and stock at render time
-* Floating bubble, search bar, Ask AI button, and embedded panel
+* Floating bubble, search bar, Ask ShopAsk button, and embedded panel
 * Optional voice input (Web Speech API)
 * Add to cart for simple in-stock products
 
@@ -39,7 +39,7 @@ This plugin sends data to an external AI provider **only after** you configure a
 
 1. Upload the plugin ZIP via **Plugins → Add New → Upload Plugin**, or install from WordPress.org.
 2. Activate the plugin (WooCommerce must be active).
-3. Go to **WooCommerce → AI Assistant**.
+3. Go to **WooCommerce → ShopAsk AI**.
 4. Choose your AI provider, enter your API key, and save.
 5. Click **Reindex Catalog** and wait until indexing finishes.
 6. Visit the storefront — the floating assistant appears when enabled, or place shortcodes / the block.
@@ -60,17 +60,21 @@ You do. Queries use your provider API key. The plugin includes rate limits and a
 
 = Can I hide branding? =
 
-Yes. Enable white-label in **WooCommerce → AI Assistant → Settings**.
+Yes. Enable white-label in **WooCommerce → ShopAsk AI → Settings**.
 
 = Which shortcodes are available? =
 
-`[wc_ai_assistant type="search"]`, `[wc_ai_assistant type="button"]`, `[wc_ai_assistant type="panel"]`, and `[wc_ai_assistant type="floating"]`.
+`[shopask_ai type="search"]`, `[shopask_ai type="button"]`, `[shopask_ai type="panel"]`, and `[shopask_ai type="floating"]`.
 
 == Screenshots ==
 
 1. Storefront shopping assistant chat with a grounded product recommendation card.
 
 == Changelog ==
+
+= 0.3.9 =
+* Full ShopAsk AI branding across admin, storefront, shortcodes, block, REST, and docs
+* Primary shortcode [shopask_ai]; REST namespace shopask/v1 (legacy wcai aliases kept)
 
 = 0.3.8 =
 * Trademark-safe rename: ShopAsk AI – Shopping Assistant for WooCommerce (slug shopask-ai-shopping-assistant)

@@ -9,7 +9,7 @@
   var TextControl = wp.components.TextControl;
   var __ = wp.i18n.__;
 
-  registerBlockType('wcai/ai-assistant', {
+  registerBlockType('shopask/ai-assistant', {
     edit: function (props) {
       var attributes = props.attributes || {};
       var setAttributes = props.setAttributes;
@@ -18,8 +18,8 @@
       var blockProps = useBlockProps({ className: 'wcai-block-preview' });
 
       var typeLabels = {
-        search: __('AI search bar — great in hero or header', 'shopask-ai-shopping-assistant'),
-        button: __('Ask AI button — opens the assistant', 'shopask-ai-shopping-assistant'),
+        search: __('ShopAsk search bar — great in hero or header', 'shopask-ai-shopping-assistant'),
+        button: __('Ask ShopAsk button — opens the assistant', 'shopask-ai-shopping-assistant'),
         panel: __('Full chat panel — embed on any page', 'shopask-ai-shopping-assistant'),
         floating: __('Floating bubble — page-local launcher', 'shopask-ai-shopping-assistant'),
       };
@@ -58,9 +58,9 @@
         el(
           'div',
           blockProps,
-          el('strong', null, __('AI Shopping Assistant', 'shopask-ai-shopping-assistant')),
+          el('strong', null, __('ShopAsk AI', 'shopask-ai-shopping-assistant')),
           el('p', null, typeLabels[type] || typeLabels.panel),
-          el('p', null, el('code', null, '[wc_ai_assistant type="' + type + '"]'))
+          el('p', null, el('code', null, '[shopask_ai type="' + type + '"]'))
         )
       );
     },
