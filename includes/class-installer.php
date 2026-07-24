@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class WCAI_Installer {
 
-	const DB_VERSION = '3';
+	const DB_VERSION = '4';
 
 	const SECRET_KEYS = array( 'api_key', 'public_api_key', 'agency_license_key' );
 
@@ -61,9 +61,29 @@ class WCAI_Installer {
 		self::maybe_add_indexes();
 		self::seed_options();
 		self::migrate_secrets();
+		self::migrate_daily_soft_cap( $current );
 		self::force_options_autoload_no();
 		delete_option( 'wcai_rate_limit_keys' );
 		update_option( 'wcai_db_version', self::DB_VERSION, false );
+	}
+
+	/**
+	 * Apply default daily soft-cap when upgrading from versions that forced 0 (unlimited).
+	 *
+	 * @param string $from Previous DB version.
+	 */
+	public static function migrate_daily_soft_cap( string $from ): void {
+		if ( version_compare( $from, '4', '>=' ) ) {
+			return;
+		}
+		$settings = get_option( 'wcai_settings', array() );
+		if ( ! is_array( $settings ) ) {
+			return;
+		}
+		if ( ! isset( $settings['daily_query_cap'] ) || 0 === (int) $settings['daily_query_cap'] ) {
+			$settings['daily_query_cap'] = 500;
+			update_option( 'wcai_settings', $settings, false );
+		}
 	}
 
 	/**
@@ -320,7 +340,7 @@ class WCAI_Installer {
 			'rate_limit_per_min'   => 20,
 			'plan'                 => 'agency',
 			'monthly_query_cap'    => 0,
-			'daily_query_cap'      => 0,
+			'daily_query_cap'      => 500,
 			'hide_branding'        => '0',
 			'widget_title'         => '',
 			'accent_color'         => '#0d9488',

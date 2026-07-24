@@ -1,6 +1,35 @@
 /**
- * Storefront AI assistant — Outfit, teal/slate, sheet motion.
+ * Storefront AI assistant â€” Outfit (self-hosted), teal/slate, sheet motion.
  */
+
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/Outfit-Regular.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('../fonts/Outfit-Medium.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('../fonts/Outfit-SemiBold.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('../fonts/Outfit-Bold.woff2') format('woff2');
+}
 
 #wcai-assistant-root,
 .wcai-root,
@@ -26,7 +55,19 @@
 	box-sizing: border-box;
 }
 
-/* —— Launcher —— */
+.wcai-sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+/* â€”â€” Launcher â€”â€” */
 .wcai-launcher {
 	position: fixed;
 	right: max(20px, env(safe-area-inset-right));
@@ -80,7 +121,7 @@
 	}
 }
 
-/* —— Panel —— */
+/* â€”â€” Panel â€”â€” */
 .wcai-panel {
 	display: flex;
 	flex-direction: column;
@@ -580,7 +621,7 @@
 	animation: wcai-fade-in 0.25s ease both;
 }
 
-/* —— Search / CTA —— */
+/* â€”â€” Search / CTA â€”â€” */
 .wcai-searchbar {
 	display: grid;
 	grid-template-columns: 1fr auto;

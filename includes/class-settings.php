@@ -64,6 +64,7 @@ class WCAI_Settings {
 				'type'              => 'array',
 				'sanitize_callback' => array( __CLASS__, 'sanitize' ),
 				'default'           => array(),
+				'capability'        => 'manage_woocommerce',
 			)
 		);
 	}
@@ -136,9 +137,13 @@ class WCAI_Settings {
 		if ( $webhook && WCAI_Installer::is_blocked_url( $webhook ) ) {
 			$webhook = '';
 		}
-		if ( 'custom' === $provider && $api_base && WCAI_Installer::is_blocked_url( $api_base ) ) {
+		if ( $api_base && WCAI_Installer::is_blocked_url( $api_base ) ) {
 			$api_base = '';
 		}
+
+		$daily_cap = isset( $input['daily_query_cap'] )
+			? max( 0, absint( $input['daily_query_cap'] ) )
+			: (int) ( $current['daily_query_cap'] ?? WCAI_Usage::DEFAULT_DAILY_CAP );
 
 		$out = array(
 			'provider'             => $provider,
@@ -158,8 +163,8 @@ class WCAI_Settings {
 			'rate_limit_user'      => (int) ( $current['rate_limit_user'] ?? 60 ),
 			'rate_limit_per_min'   => (int) ( $current['rate_limit_per_min'] ?? 20 ),
 			'plan'                 => $plan,
-			'monthly_query_cap'    => 0,
-			'daily_query_cap'      => 0,
+			'monthly_query_cap'    => max( 0, (int) ( $current['monthly_query_cap'] ?? 0 ) ),
+			'daily_query_cap'      => $daily_cap,
 			'hide_branding'        => ! empty( $input['hide_branding'] ) ? '1' : '0',
 			'widget_title'         => isset( $input['widget_title'] ) ? sanitize_text_field( $input['widget_title'] ) : ( $current['widget_title'] ?? '' ),
 			'accent_color'         => isset( $input['accent_color'] ) ? sanitize_hex_color( $input['accent_color'] ) ?: '#0d9488' : ( $current['accent_color'] ?? '#0d9488' ),
@@ -464,6 +469,13 @@ class WCAI_Settings {
 						<th scope="row"><label for="wcai_prefilter"><?php esc_html_e( 'Prefilter limit', 'wc-ai-shopping-assistant' ); ?></label></th>
 						<td><input type="number" min="50" max="1000" id="wcai_prefilter" name="wcai_settings[prefilter_limit]" value="<?php echo esc_attr( (string) $settings['prefilter_limit'] ); ?>" />
 						<p class="description"><?php esc_html_e( 'Max rows to cosine-rank after SQL/FULLTEXT narrowing (in-DB scale).', 'wc-ai-shopping-assistant' ); ?></p></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="wcai_daily_cap"><?php esc_html_e( 'Daily query limit', 'wc-ai-shopping-assistant' ); ?></label></th>
+						<td>
+							<input type="number" min="0" max="100000" id="wcai_daily_cap" name="wcai_settings[daily_query_cap]" value="<?php echo esc_attr( (string) ( $settings['daily_query_cap'] ?? 500 ) ); ?>" />
+							<p class="description"><?php esc_html_e( 'Soft cap on storefront AI queries per UTC day (default 500). Uses your provider API key. Set 0 for unlimited (not recommended).', 'wc-ai-shopping-assistant' ); ?></p>
+						</td>
 					</tr>
 				</table>
 				<?php submit_button( __( 'Save settings', 'wc-ai-shopping-assistant' ) ); ?>

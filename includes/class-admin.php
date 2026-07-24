@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * WooCommerce → AI Assistant admin shell.
+ * WooCommerce â†’ AI Assistant admin shell.
  */
 class WCAI_Admin {
 
@@ -72,16 +72,9 @@ class WCAI_Admin {
 		}
 
 		wp_enqueue_style(
-			'wcai-outfit',
-			'https://fonts.bunny.net/css?family=outfit:400,500,600,700&display=swap',
-			array(),
-			null
-		);
-
-		wp_enqueue_style(
 			'wcai-admin',
 			WCAI_PLUGIN_URL . 'assets/css/admin.css',
-			array( 'wcai-outfit' ),
+			array(),
 			WCAI_VERSION
 		);
 
@@ -114,9 +107,12 @@ class WCAI_Admin {
 				'embeddingMode'  => (string) WCAI_Settings::get( 'embedding_mode', 'auto' ),
 				'provider'       => (string) WCAI_Settings::get( 'provider', 'openai' ),
 				'i18n'           => array(
-					'testing'  => __( 'Testing…', 'wc-ai-shopping-assistant' ),
+					'testing'  => __( 'Testing...', 'wc-ai-shopping-assistant' ),
 					'testOk'   => __( 'Connection OK', 'wc-ai-shopping-assistant' ),
 					'testFail' => __( 'Connection failed', 'wc-ai-shopping-assistant' ),
+					/* translators: 1: done count, 2: total count, 3: status */
+					'progress' => __( 'Progress: %1$d / %2$d (%3$s)', 'wc-ai-shopping-assistant' ),
+					'custom'   => __( '- Custom / other -', 'wc-ai-shopping-assistant' ),
 				),
 			)
 		);

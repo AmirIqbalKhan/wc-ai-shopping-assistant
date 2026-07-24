@@ -113,6 +113,18 @@ class WCAI_Widget {
 		$auto = (string) WCAI_Settings::get( 'auto_search_location', 'none' );
 		if ( self::show_floating() || ( 'none' !== $auto && '' !== $auto ) ) {
 			self::ensure_assets();
+			return;
+		}
+
+		global $post;
+		if ( $post instanceof WP_Post ) {
+			if ( has_shortcode( (string) $post->post_content, 'wc_ai_assistant' ) ) {
+				self::ensure_assets();
+				return;
+			}
+			if ( function_exists( 'has_block' ) && has_block( 'wcai/ai-assistant', $post ) ) {
+				self::ensure_assets();
+			}
 		}
 	}
 
@@ -131,16 +143,9 @@ class WCAI_Widget {
 		}
 
 		wp_enqueue_style(
-			'wcai-outfit',
-			'https://fonts.bunny.net/css?family=outfit:400,500,600,700&display=swap',
-			array(),
-			null
-		);
-
-		wp_enqueue_style(
 			'wcai-widget',
 			WCAI_PLUGIN_URL . 'assets/css/widget.css',
-			array( 'wcai-outfit' ),
+			array(),
 			WCAI_VERSION
 		);
 

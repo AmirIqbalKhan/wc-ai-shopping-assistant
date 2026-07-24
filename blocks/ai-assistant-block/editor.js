@@ -37,10 +37,10 @@
               label: __('Type', 'wc-ai-shopping-assistant'),
               value: type,
               options: [
-                { label: 'Search bar', value: 'search' },
-                { label: 'Button', value: 'button' },
-                { label: 'Chat panel', value: 'panel' },
-                { label: 'Floating', value: 'floating' },
+                { label: __('Search bar', 'wc-ai-shopping-assistant'), value: 'search' },
+                { label: __('Button', 'wc-ai-shopping-assistant'), value: 'button' },
+                { label: __('Chat panel', 'wc-ai-shopping-assistant'), value: 'panel' },
+                { label: __('Floating', 'wc-ai-shopping-assistant'), value: 'floating' },
               ],
               onChange: function (v) {
                 setAttributes({ type: v });

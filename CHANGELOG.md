@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.6
+
+- WordPress.org readiness: `readme.txt`, External services / Privacy disclosure, full GPLv2 LICENSE
+- Self-host Outfit fonts (SIL OFL); remove Bunny Fonts CDN
+- Harden `POST /wcai/v1/query` with REST nonce; daily query soft-cap (default 500); public search API key via header only
+- Privacy policy text expanded; uninstall cleans user meta, debounce transients, Action Scheduler jobs
+- `load_plugin_textdomain`, shortcode/block asset detection, a11y label + focus return
+
 ## 0.3.5
 
 - Fix floating chat close control centering against theme button styles (hard reset + absolute icon placement)

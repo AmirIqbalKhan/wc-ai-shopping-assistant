@@ -18,8 +18,12 @@
     var status = data.status || 'idle';
     if (bar) bar.style.width = pct + '%';
     if (label) {
-      label.textContent =
-        'Progress: ' + done + ' / ' + total + ' (' + status + ')';
+      var tpl =
+        (wcaiAdmin.i18n && wcaiAdmin.i18n.progress) || 'Progress: %1$d / %2$d (%3$s)';
+      label.textContent = tpl
+        .replace('%1$d', String(done))
+        .replace('%2$d', String(total))
+        .replace('%3$s', status);
     }
     if (statusVal) statusVal.textContent = status.charAt(0).toUpperCase() + status.slice(1);
     if (statusMeta) statusMeta.textContent = done + ' / ' + total;
@@ -74,7 +78,8 @@
     if (allowCustom) {
       var custom = document.createElement('option');
       custom.value = '__custom__';
-      custom.textContent = '— Custom / other —';
+      custom.textContent =
+        (wcaiAdmin.i18n && wcaiAdmin.i18n.custom) || '— Custom / other —';
       select.appendChild(custom);
     }
     if (current && map && map[current]) {

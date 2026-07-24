@@ -73,4 +73,4 @@ wc-ai-shopping-assistant/
 
 ## License
 
-TBD — recommend GPLv2 or later for WordPress.org directory compatibility, or a commercial license if distributing outside the directory.
+GPLv2 or later. See the root `LICENSE` file.

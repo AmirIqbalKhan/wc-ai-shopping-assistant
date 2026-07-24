@@ -1,6 +1,6 @@
 <?php
 /**
- * Usage counters (no public plan limits).
+ * Usage counters and soft spend caps.
  *
  * @package WCAI
  */
@@ -8,9 +8,11 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Tracks query/embed volume. Caps are disabled for now (always allow).
+ * Tracks query/embed volume and enforces a daily soft-cap (default 500).
  */
 class WCAI_Usage {
+
+	const DEFAULT_DAILY_CAP = 500;
 
 	/**
 	 * Whether usage caps are enforced.
@@ -18,11 +20,11 @@ class WCAI_Usage {
 	 * @return bool
 	 */
 	public static function limits_enabled(): bool {
-		return false;
+		return true;
 	}
 
 	/**
-	 * Plan caps map (reserved for a later release).
+	 * Plan caps map (reserved; monthly override uses settings).
 	 *
 	 * @return array
 	 */
@@ -43,12 +45,11 @@ class WCAI_Usage {
 		if ( ! self::limits_enabled() ) {
 			return 0;
 		}
-		$override = (int) WCAI_Settings::get( 'monthly_query_cap', 0 );
-		return max( 0, $override );
+		return max( 0, (int) WCAI_Settings::get( 'monthly_query_cap', 0 ) );
 	}
 
 	/**
-	 * Daily query ceiling. 0 = unlimited.
+	 * Daily query ceiling. Default 500 when unset/invalid; 0 = unlimited.
 	 *
 	 * @return int
 	 */
@@ -56,7 +57,11 @@ class WCAI_Usage {
 		if ( ! self::limits_enabled() ) {
 			return 0;
 		}
-		return max( 0, (int) WCAI_Settings::get( 'daily_query_cap', 0 ) );
+		$raw = WCAI_Settings::get( 'daily_query_cap', self::DEFAULT_DAILY_CAP );
+		if ( null === $raw || '' === $raw ) {
+			return self::DEFAULT_DAILY_CAP;
+		}
+		return max( 0, (int) $raw );
 	}
 
 	/**
@@ -159,16 +164,35 @@ class WCAI_Usage {
 	}
 
 	/**
-	 * Whether another query/embed is allowed.
+	 * Whether another query/embed is allowed under soft-caps.
 	 *
 	 * @param string $kind query|embed.
 	 * @return true|WP_Error
 	 */
 	public static function assert_allowed( string $kind = 'query' ) {
-		unset( $kind );
 		if ( ! self::limits_enabled() ) {
 			return true;
 		}
+
+		if ( 'query' === $kind ) {
+			$daily = self::daily_cap();
+			if ( $daily > 0 && self::used_today() >= $daily ) {
+				return new WP_Error(
+					'wcai_daily_limit',
+					__( 'The store’s daily AI assistant query limit has been reached. Please try again tomorrow.', 'wc-ai-shopping-assistant' ),
+					array( 'status' => 429 )
+				);
+			}
+			$monthly = self::monthly_cap();
+			if ( $monthly > 0 && self::used() >= $monthly ) {
+				return new WP_Error(
+					'wcai_monthly_limit',
+					__( 'The store’s monthly AI assistant query limit has been reached.', 'wc-ai-shopping-assistant' ),
+					array( 'status' => 429 )
+				);
+			}
+		}
+
 		return true;
 	}
 

@@ -3,14 +3,17 @@
  * Plugin Name:       WooCommerce AI Shopping Assistant
  * Plugin URI:        https://github.com/AmirIqbalKhan/wc-ai-shopping-assistant
  * Description:       Conversational, natural-language product finder for WooCommerce stores.
- * Version:           0.3.5
+ * Version:           0.3.6
  * Requires at least: 6.4
  * Requires PHP:      8.1
+ * WC requires at least: 8.0
+ * WC tested up to:   9.9
  * Author:            Aamir Iqbal Khan
  * Author URI:        https://github.com/AmirIqbalKhan
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       wc-ai-shopping-assistant
+ * Domain Path:       /languages
  * Requires Plugins:  woocommerce
  *
  * @package WCAI
@@ -19,7 +22,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WCAI_VERSION', '0.3.5' );
+define( 'WCAI_VERSION', '0.3.6' );
 define( 'WCAI_PLUGIN_FILE', __FILE__ );
 define( 'WCAI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WCAI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -88,6 +91,14 @@ function wcai_requirements_notice(): void {
 
 register_activation_hook( __FILE__, array( 'WCAI_Installer', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'WCAI_Installer', 'deactivate' ) );
+
+/**
+ * Load translations.
+ */
+function wcai_load_textdomain(): void {
+	load_plugin_textdomain( 'wc-ai-shopping-assistant', false, dirname( WCAI_PLUGIN_BASENAME ) . '/languages' );
+}
+add_action( 'plugins_loaded', 'wcai_load_textdomain', 1 );
 
 /**
  * Boot the plugin after plugins are loaded.

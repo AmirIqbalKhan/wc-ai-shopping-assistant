@@ -29,7 +29,7 @@ class WCAI_REST {
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( __CLASS__, 'handle_query' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( __CLASS__, 'query_permission' ),
 				'args'                => array(
 					'query'         => array(
 						'required'          => true,
@@ -118,7 +118,25 @@ class WCAI_REST {
 	}
 
 	/**
-	 * Permission for public search: manage_woocommerce or API key header.
+	 * Browser chat requires a valid wp_rest nonce (localized on the storefront).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return true|WP_Error
+	 */
+	public static function query_permission( WP_REST_Request $request ) {
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( is_string( $nonce ) && '' !== $nonce && wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return true;
+		}
+		return new WP_Error(
+			'wcai_rest_forbidden',
+			__( 'Missing or invalid REST nonce.', 'wc-ai-shopping-assistant' ),
+			array( 'status' => 401 )
+		);
+	}
+
+	/**
+	 * Permission for public search: manage_woocommerce or X-WCAI-API-Key header only.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return bool
@@ -132,10 +150,7 @@ class WCAI_REST {
 			return false;
 		}
 		$provided = $request->get_header( 'X-WCAI-API-Key' );
-		if ( ! $provided ) {
-			$provided = $request->get_param( 'api_key' );
-		}
-		return is_string( $provided ) && hash_equals( $key, $provided );
+		return is_string( $provided ) && '' !== $provided && hash_equals( $key, $provided );
 	}
 
 	/**

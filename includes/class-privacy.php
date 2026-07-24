@@ -53,7 +53,7 @@ class WCAI_Privacy {
 			return;
 		}
 		$content = __(
-			'When you use the on-site AI shopping assistant, your search text (up to 500 characters) and session token may be stored for analytics for up to 90 days, and may be sent to the configured AI provider to generate product recommendations. Product recommendations use catalog data only.',
+			'When you use the on-site AI shopping assistant, your search text (up to 500 characters) and a session token may be stored in this site’s database for analytics for up to 90 days. The same search text, together with short product catalog snippets (titles and descriptions), may be sent to the AI provider configured by the store owner (for example OpenAI, Anthropic Claude, Google Gemini, LongCat, OpenRouter, or a custom API base URL) so the assistant can return product recommendations. Catalog indexing may also send product titles and descriptions to that provider to create search embeddings. If the store owner enables an optional webhook, search-related data may be sent to the HTTPS URL they configure. Recommendations are limited to products in the store catalog. This plugin does not send data to the plugin author’s servers.',
 			'wc-ai-shopping-assistant'
 		);
 		wp_add_privacy_policy_content( 'WooCommerce AI Shopping Assistant', wp_kses_post( wpautop( $content ) ) );

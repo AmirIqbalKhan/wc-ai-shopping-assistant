@@ -130,6 +130,8 @@
       '">' +
       '<input type="text" class="wcai-panel__input" maxlength="500" placeholder="' +
       escapeHtml(cfg.i18n.placeholder) +
+      '" aria-label="' +
+      escapeHtml(cfg.i18n.placeholder) +
       '" autocomplete="off" />' +
       (voiceSupported
         ? '<button type="button" class="wcai-panel__mic" aria-label="' +
@@ -565,6 +567,12 @@
         host._wcaiUnbind();
         host._wcaiUnbind = null;
       }
+      var returnFocus = host._wcaiReturnFocus;
+      if (returnFocus && typeof returnFocus.focus === 'function') {
+        try {
+          returnFocus.focus();
+        } catch (e) {}
+      }
     }
 
     if (!existing) {
@@ -582,6 +590,7 @@
       backdrop.addEventListener('click', close);
     }
 
+    host._wcaiReturnFocus = document.activeElement;
     existing.hidden = false;
     if (backdrop) backdrop.hidden = false;
     lockBody(true);

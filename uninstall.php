@@ -36,6 +36,21 @@ foreach ( $options as $option ) {
 	delete_option( $option );
 }
 
+// Session tokens stored on users for privacy export/erase.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'wcai_session_token'" );
+
+// Debounce transients from product hooks.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_wcai_debounce_%' OR option_name LIKE '_transient_timeout_wcai_debounce_%'" );
+
+// Pending Action Scheduler jobs in the wcai group.
+if ( function_exists( 'as_unschedule_all_actions' ) ) {
+	foreach ( array( 'wcai_reindex_batch', 'wcai_reindex_product', 'wcai_remove_product', 'wcai_update_stock' ) as $hook ) {
+		as_unschedule_all_actions( $hook, array(), 'wcai' );
+	}
+}
+
 wp_clear_scheduled_hook( 'wcai_cleanup_rate_limits' );
 wp_clear_scheduled_hook( 'wcai_cleanup_sessions' );
 wp_clear_scheduled_hook( 'wcai_cleanup_analytics' );

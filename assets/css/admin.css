@@ -2,6 +2,35 @@
  * AI Assistant admin hub.
  */
 
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/Outfit-Regular.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('../fonts/Outfit-Medium.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('../fonts/Outfit-SemiBold.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Outfit';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('../fonts/Outfit-Bold.woff2') format('woff2');
+}
+
 .wcai-admin {
 	--wcai-a-ink: #0f172a;
 	--wcai-a-muted: #64748b;

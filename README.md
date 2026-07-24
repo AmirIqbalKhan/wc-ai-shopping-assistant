@@ -8,6 +8,8 @@ Built for store owners who want smarter discovery without inventing products, pr
 
 <img src="assets/screenshot-chat.jpg" alt="Shopping Assistant chat on the storefront — shopper query, grounded reply, and product card" width="480" />
 
+WordPress.org directory metadata lives in [`readme.txt`](readme.txt) (including **External services** and **Privacy**). Outfit is self-hosted under `assets/fonts/` (SIL OFL).
+
 ---
 
 ## Features
