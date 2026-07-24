@@ -4,6 +4,10 @@ A WordPress / WooCommerce plugin that adds a conversational product finder to yo
 
 Built for store owners who want smarter discovery without inventing products, prices, or stock.
 
+### Preview
+
+![Shopping Assistant chat on the storefront — shopper query, grounded reply, and product card](assets/screenshot-chat.png)
+
 ---
 
 ## Features
