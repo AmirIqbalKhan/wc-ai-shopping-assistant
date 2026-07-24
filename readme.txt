@@ -1,10 +1,10 @@
-=== WooCommerce AI Shopping Assistant ===
+=== WCAI – AI Shopping Assistant for WooCommerce ===
 Contributors: amiriqbalkhan
 Tags: woocommerce, ai, search, shopping assistant, product finder
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 0.3.6
+Stable tag: 0.3.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,9 @@ Conversational, natural-language product finder for WooCommerce stores. Grounded
 
 == Description ==
 
-WooCommerce AI Shopping Assistant lets shoppers describe what they want in plain language and receive product recommendations from your **live catalog**, with match reasons and working product links.
+WCAI – AI Shopping Assistant for WooCommerce lets shoppers describe what they want in plain language and receive product recommendations from your **live catalog**, with match reasons and working product links.
+
+This plugin is an independent product and is not affiliated with or endorsed by Automattic or WooCommerce.
 
 **Shopper experience**
 
@@ -70,6 +72,9 @@ Yes. Enable white-label in **WooCommerce → AI Assistant → Settings**.
 
 == Changelog ==
 
+= 0.3.7 =
+* Rename display title for WordPress.org Guideline 17: WCAI – AI Shopping Assistant for WooCommerce (independent; not affiliated with Automattic/WooCommerce)
+
 = 0.3.6 =
 * WordPress.org readiness: readme.txt, External services disclosure, self-hosted Outfit fonts
 * Harden public query endpoint (REST nonce + daily soft-cap); public search API key via header only
@@ -101,8 +106,11 @@ Yes. Enable white-label in **WooCommerce → AI Assistant → Settings**.
 
 == Upgrade Notice ==
 
+= 0.3.7 =
+Display name updated for WordPress.org trademark guidelines. Plugin slug and data are unchanged.
+
 = 0.3.6 =
-Recommended before WordPress.org submission. Adds daily query soft-cap (default 500) and requires a REST nonce for browser chat queries. Self-hosts Outfit fonts (no Bunny CDN).
+Adds daily query soft-cap (default 500) and requires a REST nonce for browser chat queries. Self-hosts Outfit fonts (no Bunny CDN).
 
 == External services ==
 

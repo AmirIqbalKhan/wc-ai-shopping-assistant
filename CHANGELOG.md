@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7
+
+- Rename display title for WordPress.org Guideline 17: **WCAI – AI Shopping Assistant for WooCommerce** (WooCommerce at the end; independent plugin, not affiliated with Automattic/WooCommerce). Slug unchanged.
+
 ## 0.3.6
 
 - WordPress.org readiness: `readme.txt`, External services / Privacy disclosure, full GPLv2 LICENSE

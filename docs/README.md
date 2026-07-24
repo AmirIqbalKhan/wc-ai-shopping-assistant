@@ -1,4 +1,4 @@
-# WooCommerce AI Shopping Assistant
+# WCAI – AI Shopping Assistant for WooCommerce
 
 A WordPress/WooCommerce plugin that adds a conversational, natural-language product finder to any store. Shoppers describe what they want in plain English ("something for a rainy hike under $80") and get grounded, real-time product recommendations pulled directly from the store's live catalog.
 

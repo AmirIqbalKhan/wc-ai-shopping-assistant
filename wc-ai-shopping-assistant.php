@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       WooCommerce AI Shopping Assistant
+ * Plugin Name:       WCAI – AI Shopping Assistant for WooCommerce
  * Plugin URI:        https://github.com/AmirIqbalKhan/wc-ai-shopping-assistant
  * Description:       Conversational, natural-language product finder for WooCommerce stores.
- * Version:           0.3.6
+ * Version:           0.3.7
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * WC requires at least: 8.0
@@ -22,7 +22,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WCAI_VERSION', '0.3.6' );
+define( 'WCAI_VERSION', '0.3.7' );
 define( 'WCAI_PLUGIN_FILE', __FILE__ );
 define( 'WCAI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WCAI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -85,7 +85,7 @@ function wcai_requirements_met(): bool {
  */
 function wcai_requirements_notice(): void {
 	echo '<div class="notice notice-error"><p>';
-	echo esc_html__( 'WooCommerce AI Shopping Assistant requires PHP 8.1+ and WooCommerce 8.0+.', 'wc-ai-shopping-assistant' );
+	echo esc_html__( 'WCAI – AI Shopping Assistant for WooCommerce requires PHP 8.1+ and WooCommerce 8.0+.', 'wc-ai-shopping-assistant' );
 	echo '</p></div>';
 }
 

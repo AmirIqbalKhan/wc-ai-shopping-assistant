@@ -279,7 +279,7 @@ class WCAI_Settings {
 		$tab = WCAI_Admin::current_tab();
 
 		echo '<div class="wrap wcai-admin">';
-		echo '<h1>' . esc_html__( 'AI Shopping Assistant', 'wc-ai-shopping-assistant' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'WCAI – AI Shopping Assistant for WooCommerce', 'wc-ai-shopping-assistant' ) . '</h1>';
 		WCAI_Admin::render_tabs( $tab );
 
 		if ( 'analytics' === $tab ) {

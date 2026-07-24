@@ -384,7 +384,7 @@ class WCAI_OpenAI_Client {
 		// OpenRouter recommends these optional headers.
 		if ( 'openrouter' === self::provider() ) {
 			$headers['HTTP-Referer'] = home_url( '/' );
-			$headers['X-Title']      = 'WooCommerce AI Shopping Assistant';
+			$headers['X-Title']      = 'WCAI – AI Shopping Assistant for WooCommerce';
 		}
 
 		return self::http_post( $url, $headers, $body );

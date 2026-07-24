@@ -1,5 +1,5 @@
 /**
- * WooCommerce AI Shopping Assistant widgets:
+ * WCAI – AI Shopping Assistant for WooCommerce widgets:
  * floating | panel | search | button
  */
 (function () {
