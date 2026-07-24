@@ -6,7 +6,7 @@ Built for store owners who want smarter discovery without inventing products, pr
 
 ### Preview
 
-![Shopping Assistant chat on the storefront — shopper query, grounded reply, and product card](assets/screenshot-chat.png)
+<img src="assets/screenshot-chat.jpg" alt="Shopping Assistant chat on the storefront — shopper query, grounded reply, and product card" width="480" />
 
 ---
 
