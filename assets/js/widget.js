@@ -18,7 +18,7 @@
   var MIC_SVG =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>';
   var CLOSE_SVG =
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5.05L5.05 6.4 10.66 12l-5.61 5.6 1.35 1.35L12 13.34l5.6 5.61 1.35-1.35L13.34 12l5.61-5.6-1.35-1.35L12 10.66 6.4 5.05z"/></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M18.3 5.71L12 12.01l-6.3-6.3-1.4 1.42 6.29 6.29-6.3 6.3 1.42 1.4L12 14.42l6.29 6.3 1.4-1.42-6.28-6.29 6.3-6.3z"/></svg>';
   var LAUNCHER_SVG =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C4 5.12 5.12 4 6.5 4h7C15.88 4 17 5.12 17 6.5V8h.5A2.5 2.5 0 0 1 20 10.5v6A3.5 3.5 0 0 1 16.5 20h-9A3.5 3.5 0 0 1 4 16.5v-10zm4.5 7.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zm3.5 0a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zm3.5 0a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5z"/></svg>';
 

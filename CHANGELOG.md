@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5
+
+- Fix floating chat close control centering against theme button styles (hard reset + absolute icon placement)
+
 ## 0.3.4
 
 - Premium storefront UI: Outfit typography, mobile chat sheet, suggestion chips, skeleton thinking, richer product cards with Add to cart

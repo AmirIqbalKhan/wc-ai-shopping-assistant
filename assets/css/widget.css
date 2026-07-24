@@ -193,34 +193,55 @@
 	letter-spacing: -0.02em;
 }
 
-.wcai-panel__close {
-	box-sizing: border-box;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	flex-shrink: 0;
-	width: 36px;
-	height: 36px;
-	margin: 0;
-	padding: 0;
-	border: 0;
-	border-radius: 10px;
-	background: rgba(255, 255, 255, 0.1);
-	color: #f8fafc;
-	line-height: 0;
-	cursor: pointer;
+/* High specificity: themes often pad/widen `button` and left-align content. */
+#wcai-overlay-host .wcai-panel__close,
+.wcai-panel .wcai-panel__close,
+.wcai-root .wcai-panel__close {
+	all: unset;
+	box-sizing: border-box !important;
+	position: relative !important;
+	display: inline-block !important;
+	flex-shrink: 0 !important;
+	width: 36px !important;
+	height: 36px !important;
+	min-width: 36px !important;
+	max-width: 36px !important;
+	min-height: 36px !important;
+	max-height: 36px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 10px !important;
+	background: rgba(255, 255, 255, 0.1) !important;
+	color: #f8fafc !important;
+	line-height: 0 !important;
+	font-size: 0 !important;
+	text-align: center !important;
+	cursor: pointer !important;
+	appearance: none !important;
+	-webkit-appearance: none !important;
 	transition: background 0.2s ease;
 }
 
-.wcai-panel__close svg {
-	display: block;
-	width: 16px;
-	height: 16px;
-	fill: currentColor;
+#wcai-overlay-host .wcai-panel__close svg,
+.wcai-panel .wcai-panel__close svg,
+.wcai-root .wcai-panel__close svg {
+	position: absolute !important;
+	top: 50% !important;
+	left: 50% !important;
+	width: 16px !important;
+	height: 16px !important;
+	margin: 0 !important;
+	transform: translate(-50%, -50%) !important;
+	fill: currentColor !important;
+	display: block !important;
+	pointer-events: none;
 }
 
-.wcai-panel__close:hover {
-	background: rgba(255, 255, 255, 0.18);
+#wcai-overlay-host .wcai-panel__close:hover,
+.wcai-panel .wcai-panel__close:hover,
+.wcai-root .wcai-panel__close:hover {
+	background: rgba(255, 255, 255, 0.18) !important;
 }
 
 .wcai-panel__messages {
