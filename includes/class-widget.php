@@ -139,7 +139,7 @@ class WCAI_Widget {
 
 		$title = (string) WCAI_Settings::get( 'widget_title', '' );
 		if ( '' === $title ) {
-			$title = __( 'Shopping Assistant', 'wc-ai-shopping-assistant' );
+			$title = __( 'Shopping Assistant', 'shopask-ai-shopping-assistant' );
 		}
 
 		wp_enqueue_style(
@@ -176,31 +176,31 @@ class WCAI_Widget {
 				'accent'       => $accent,
 				'suggestions'  => array(
 					/* translators: %s: currency symbol */
-					sprintf( __( 'Under %s50', 'wc-ai-shopping-assistant' ), $symbol ),
-					__( 'Gift ideas', 'wc-ai-shopping-assistant' ),
-					__( 'Bestsellers', 'wc-ai-shopping-assistant' ),
-					__( 'Something new', 'wc-ai-shopping-assistant' ),
+					sprintf( __( 'Under %s50', 'shopask-ai-shopping-assistant' ), $symbol ),
+					__( 'Gift ideas', 'shopask-ai-shopping-assistant' ),
+					__( 'Bestsellers', 'shopask-ai-shopping-assistant' ),
+					__( 'Something new', 'shopask-ai-shopping-assistant' ),
 				),
 				'i18n'         => array(
 					'title'             => $title,
-					'placeholder'       => __( 'Describe what you are looking for…', 'wc-ai-shopping-assistant' ),
-					'searchPlaceholder' => __( 'Search with AI — e.g. rain jacket under $80', 'wc-ai-shopping-assistant' ),
-					'send'              => __( 'Send', 'wc-ai-shopping-assistant' ),
-					'search'            => __( 'Search', 'wc-ai-shopping-assistant' ),
-					'askAi'             => __( 'Ask AI', 'wc-ai-shopping-assistant' ),
-					'empty'             => __( 'Tell me what you need — budget, occasion, or style. Tap a suggestion or type your own.', 'wc-ai-shopping-assistant' ),
-					'error'             => __( 'Something went wrong. Please try again.', 'wc-ai-shopping-assistant' ),
-					'thinking'          => __( 'Searching the catalog…', 'wc-ai-shopping-assistant' ),
-					'openLabel'         => __( 'Open shopping assistant', 'wc-ai-shopping-assistant' ),
-					'closeLabel'        => __( 'Close shopping assistant', 'wc-ai-shopping-assistant' ),
-					'poweredBy'         => __( 'Powered by AI Assistant', 'wc-ai-shopping-assistant' ),
-					'voice'             => __( 'Voice input', 'wc-ai-shopping-assistant' ),
-					'listening'         => __( 'Listening…', 'wc-ai-shopping-assistant' ),
-					'addToCart'         => __( 'Add to cart', 'wc-ai-shopping-assistant' ),
-					'adding'            => __( 'Adding…', 'wc-ai-shopping-assistant' ),
-					'added'             => __( 'Added to cart', 'wc-ai-shopping-assistant' ),
-					'viewProduct'       => __( 'View product', 'wc-ai-shopping-assistant' ),
-					'cartError'         => __( 'Could not add to cart. Open the product page instead.', 'wc-ai-shopping-assistant' ),
+					'placeholder'       => __( 'Describe what you are looking for…', 'shopask-ai-shopping-assistant' ),
+					'searchPlaceholder' => __( 'Search with AI — e.g. rain jacket under $80', 'shopask-ai-shopping-assistant' ),
+					'send'              => __( 'Send', 'shopask-ai-shopping-assistant' ),
+					'search'            => __( 'Search', 'shopask-ai-shopping-assistant' ),
+					'askAi'             => __( 'Ask AI', 'shopask-ai-shopping-assistant' ),
+					'empty'             => __( 'Tell me what you need — budget, occasion, or style. Tap a suggestion or type your own.', 'shopask-ai-shopping-assistant' ),
+					'error'             => __( 'Something went wrong. Please try again.', 'shopask-ai-shopping-assistant' ),
+					'thinking'          => __( 'Searching the catalog…', 'shopask-ai-shopping-assistant' ),
+					'openLabel'         => __( 'Open shopping assistant', 'shopask-ai-shopping-assistant' ),
+					'closeLabel'        => __( 'Close shopping assistant', 'shopask-ai-shopping-assistant' ),
+					'poweredBy'         => __( 'Powered by AI Assistant', 'shopask-ai-shopping-assistant' ),
+					'voice'             => __( 'Voice input', 'shopask-ai-shopping-assistant' ),
+					'listening'         => __( 'Listening…', 'shopask-ai-shopping-assistant' ),
+					'addToCart'         => __( 'Add to cart', 'shopask-ai-shopping-assistant' ),
+					'adding'            => __( 'Adding…', 'shopask-ai-shopping-assistant' ),
+					'added'             => __( 'Added to cart', 'shopask-ai-shopping-assistant' ),
+					'viewProduct'       => __( 'View product', 'shopask-ai-shopping-assistant' ),
+					'cartError'         => __( 'Could not add to cart. Open the product page instead.', 'shopask-ai-shopping-assistant' ),
 				),
 			)
 		);

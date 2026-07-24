@@ -130,7 +130,7 @@ class WCAI_REST {
 		}
 		return new WP_Error(
 			'wcai_rest_forbidden',
-			__( 'Missing or invalid REST nonce.', 'wc-ai-shopping-assistant' ),
+			__( 'Missing or invalid REST nonce.', 'shopask-ai-shopping-assistant' ),
 			array( 'status' => 401 )
 		);
 	}
@@ -173,7 +173,7 @@ class WCAI_REST {
 		if ( ! WCAI_Settings::get( 'api_key' ) ) {
 			return new WP_Error(
 				'wcai_not_configured',
-				__( 'The AI assistant is not configured yet.', 'wc-ai-shopping-assistant' ),
+				__( 'The AI assistant is not configured yet.', 'shopask-ai-shopping-assistant' ),
 				array( 'status' => 503 )
 			);
 		}
@@ -183,7 +183,7 @@ class WCAI_REST {
 		if ( '' === $query || $len > 500 ) {
 			return new WP_Error(
 				'wcai_bad_query',
-				__( 'Please enter a query between 1 and 500 characters.', 'wc-ai-shopping-assistant' ),
+				__( 'Please enter a query between 1 and 500 characters.', 'shopask-ai-shopping-assistant' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -299,7 +299,7 @@ class WCAI_REST {
 		if ( '' === $query || $len > 500 ) {
 			return new WP_Error(
 				'wcai_bad_query',
-				__( 'Please enter a query between 1 and 500 characters.', 'wc-ai-shopping-assistant' ),
+				__( 'Please enter a query between 1 and 500 characters.', 'shopask-ai-shopping-assistant' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -347,7 +347,7 @@ class WCAI_REST {
 	 */
 	public static function handle_test_connection() {
 		if ( ! WCAI_Settings::get( 'api_key' ) ) {
-			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'wc-ai-shopping-assistant' ), array( 'status' => 400 ) );
+			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'shopask-ai-shopping-assistant' ), array( 'status' => 400 ) );
 		}
 		$result = WCAI_OpenAI_Client::chat_json(
 			array(
@@ -412,17 +412,19 @@ class WCAI_REST {
 			$key   = 'a_' . md5( self::client_ip() ) . '_' . $bucket;
 		}
 
-		$table = WCAI_Installer::rate_limits_table();
-		$now   = time();
-		$start = $now;
+		$table     = WCAI_Installer::rate_limits_table();
+		$now       = time();
+		$start     = $now;
+		$cache_key = 'rate_' . $key;
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write path
 		$wpdb->query(
 			$wpdb->prepare(
-				"INSERT INTO {$table} (rate_key, window_start, hit_count) VALUES (%s, %d, 1)
+				'INSERT INTO %i (rate_key, window_start, hit_count) VALUES (%s, %d, 1)
 				ON DUPLICATE KEY UPDATE
 					hit_count = IF( ( %d - window_start ) >= %d, 1, hit_count + 1 ),
-					window_start = IF( ( %d - window_start ) >= %d, %d, window_start )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					window_start = IF( ( %d - window_start ) >= %d, %d, window_start )',
+				$table,
 				$key,
 				$start,
 				$now,
@@ -433,17 +435,20 @@ class WCAI_REST {
 			)
 		);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- immediately after write
 		$count = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT hit_count FROM {$table} WHERE rate_key = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'SELECT hit_count FROM %i WHERE rate_key = %s',
+				$table,
 				$key
 			)
 		);
+		WCAI_DB::cache_set( $cache_key, $count, 60 );
 
 		if ( $count > $limit ) {
 			return new WP_Error(
 				'wcai_rate_limited',
-				__( 'Too many requests. Please wait a moment and try again.', 'wc-ai-shopping-assistant' ),
+				__( 'Too many requests. Please wait a moment and try again.', 'shopask-ai-shopping-assistant' ),
 				array( 'status' => 429 )
 			);
 		}
@@ -468,8 +473,8 @@ class WCAI_REST {
 		global $wpdb;
 		$table = WCAI_Installer::rate_limits_table();
 		$cut   = time() - ( 2 * HOUR_IN_SECONDS );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE window_start < %d", $cut ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- scheduled prune
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE window_start < %d', $table, $cut ) );
 		delete_option( 'wcai_rate_limit_keys' );
 	}
 }

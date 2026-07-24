@@ -31,26 +31,26 @@ class WCAI_Insights {
 		$unmatched = WCAI_Analytics::unmatched( $days );
 		WCAI_Analytics::render_period_chips( 'insights', $days );
 		?>
-		<p class="description"><?php esc_html_e( 'Queries shoppers asked that returned weak or no catalog matches — useful for spotting inventory or content gaps.', 'wc-ai-shopping-assistant' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Queries shoppers asked that returned weak or no catalog matches — useful for spotting inventory or content gaps.', 'shopask-ai-shopping-assistant' ); ?></p>
 
 		<p class="wcai-link-row">
 			<a href="<?php echo esc_url( WCAI_Admin::url( 'analytics', array( 'days' => $days ) ) ); ?>">
-				<?php esc_html_e( '← Back to analytics', 'wc-ai-shopping-assistant' ); ?>
+				<?php esc_html_e( '← Back to analytics', 'shopask-ai-shopping-assistant' ); ?>
 			</a>
 		</p>
 
 		<section class="wcai-card">
-			<h2><?php esc_html_e( 'Unmatched demand', 'wc-ai-shopping-assistant' ); ?></h2>
+			<h2><?php esc_html_e( 'Unmatched demand', 'shopask-ai-shopping-assistant' ); ?></h2>
 			<?php if ( empty( $unmatched ) ) : ?>
 				<div class="wcai-empty-state">
-					<p><?php esc_html_e( 'No unmatched queries in this period. When shoppers ask for items you do not stock, they will show up here.', 'wc-ai-shopping-assistant' ); ?></p>
+					<p><?php esc_html_e( 'No unmatched queries in this period. When shoppers ask for items you do not stock, they will show up here.', 'shopask-ai-shopping-assistant' ); ?></p>
 				</div>
 			<?php else : ?>
 				<table class="widefat striped">
 					<thead>
 						<tr>
-							<th><?php esc_html_e( 'Unmatched request', 'wc-ai-shopping-assistant' ); ?></th>
-							<th><?php esc_html_e( 'Times asked', 'wc-ai-shopping-assistant' ); ?></th>
+							<th><?php esc_html_e( 'Unmatched request', 'shopask-ai-shopping-assistant' ); ?></th>
+							<th><?php esc_html_e( 'Times asked', 'shopask-ai-shopping-assistant' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>

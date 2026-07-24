@@ -41,6 +41,7 @@ class WCAI_Session {
 		$table = WCAI_Installer::sessions_table();
 		$token = wp_generate_password( 32, false, false );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- session create
 		$wpdb->insert(
 			$table,
 			array(
@@ -73,9 +74,17 @@ class WCAI_Session {
 		global $wpdb;
 		$table = WCAI_Installer::sessions_table();
 
+		$cache_key = 'session_' . $token;
+		$cached    = WCAI_DB::cache_get( $cache_key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cached above
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE session_token = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'SELECT * FROM %i WHERE session_token = %s LIMIT 1',
+				$table,
 				$token
 			),
 			ARRAY_A
@@ -95,13 +104,15 @@ class WCAI_Session {
 		$shown       = json_decode( (string) $row['shown_product_ids'], true );
 		$history     = json_decode( (string) $row['history_json'], true );
 
-		return array(
+		$session = array(
 			'session_token'     => $row['session_token'],
 			'constraints'       => is_array( $constraints ) ? $constraints : array(),
 			'shown_product_ids' => is_array( $shown ) ? array_map( 'intval', $shown ) : array(),
 			'history'           => is_array( $history ) ? $history : array(),
 			'turn_count'        => (int) $row['turn_count'],
 		);
+		WCAI_DB::cache_set( $cache_key, $session, 60 );
+		return $session;
 	}
 
 	/**
@@ -113,6 +124,7 @@ class WCAI_Session {
 		global $wpdb;
 		$table = WCAI_Installer::sessions_table();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- session write
 		$wpdb->update(
 			$table,
 			array(
@@ -126,6 +138,10 @@ class WCAI_Session {
 			array( '%s', '%s', '%s', '%d', '%s' ),
 			array( '%s' )
 		);
+		$token = (string) ( $session['session_token'] ?? '' );
+		if ( $token ) {
+			WCAI_DB::cache_delete( 'session_' . $token );
+		}
 	}
 
 	/**
@@ -135,7 +151,9 @@ class WCAI_Session {
 	 */
 	public static function delete( string $token ): void {
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- session delete
 		$wpdb->delete( WCAI_Installer::sessions_table(), array( 'session_token' => $token ), array( '%s' ) );
+		WCAI_DB::cache_delete( 'session_' . $token );
 	}
 
 	/**
@@ -145,8 +163,8 @@ class WCAI_Session {
 		global $wpdb;
 		$table = WCAI_Installer::sessions_table();
 		$cut   = gmdate( 'Y-m-d H:i:s', time() - self::TTL_HOURS * HOUR_IN_SECONDS );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE updated_at < %s", $cut ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- scheduled prune
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE updated_at < %s', $table, $cut ) );
 	}
 
 	/**

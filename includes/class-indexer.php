@@ -24,15 +24,32 @@ class WCAI_Indexer {
 	 * @return int
 	 */
 	public static function indexed_count(): int {
+		$mode      = (string) WCAI_Settings::get( 'index_mode', 'parent' );
+		$cache_key = 'indexed_count_' . $mode;
+		$cached    = WCAI_DB::cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return (int) $cached;
+		}
+
 		global $wpdb;
 		$table = WCAI_Installer::table_name();
-		$mode  = (string) WCAI_Settings::get( 'index_mode', 'parent' );
 		if ( 'variation' === $mode ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE variation_id > 0" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cached above
+			$count = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE variation_id > 0', $table ) );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cached above
+			$count = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE variation_id = 0', $table ) );
 		}
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE variation_id = 0" );
+		WCAI_DB::cache_set( $cache_key, $count, 30 );
+		return $count;
+	}
+
+	/**
+	 * Invalidate indexed-count object-cache keys.
+	 */
+	public static function bust_indexed_count_cache(): void {
+		WCAI_DB::cache_delete( 'indexed_count_parent' );
+		WCAI_DB::cache_delete( 'indexed_count_variation' );
 	}
 
 	/**
@@ -240,6 +257,7 @@ class WCAI_Indexer {
 		// Clear parent-only row if present.
 		global $wpdb;
 		$table = WCAI_Installer::table_name();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- index maintenance
 		$wpdb->delete(
 			$table,
 			array(
@@ -248,6 +266,7 @@ class WCAI_Indexer {
 			),
 			array( '%d', '%d' )
 		);
+		self::bust_indexed_count_cache();
 
 		$children = $product->get_children();
 		$payloads = array();
@@ -353,6 +372,7 @@ class WCAI_Indexer {
 
 		if ( $product->is_type( 'variation' ) ) {
 			$parent_id = (int) $product->get_parent_id();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- index maintenance
 			$wpdb->update(
 				$table,
 				array(
@@ -376,6 +396,7 @@ class WCAI_Indexer {
 			return;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- index maintenance
 		$wpdb->update(
 			$table,
 			array(
@@ -400,7 +421,9 @@ class WCAI_Indexer {
 	public static function remove_product( int $product_id ): void {
 		global $wpdb;
 		$table = WCAI_Installer::table_name();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- index maintenance
 		$wpdb->delete( $table, array( 'product_id' => $product_id ), array( '%d' ) );
+		self::bust_indexed_count_cache();
 	}
 
 	/**
@@ -493,9 +516,11 @@ class WCAI_Indexer {
 		$table        = WCAI_Installer::table_name();
 		$variation_id = (int) ( $row['variation_id'] ?? 0 );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- upsert lookup
 		$existing_id = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT id FROM {$table} WHERE product_id = %d AND variation_id = %d LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'SELECT id FROM %i WHERE product_id = %d AND variation_id = %d LIMIT 1',
+				$table,
 				$row['product_id'],
 				$variation_id
 			)
@@ -518,10 +543,13 @@ class WCAI_Indexer {
 		$formats = array( '%d', '%d', '%s', '%s', '%f', '%s', '%s', '%s', '%s', '%s', '%s' );
 
 		if ( $existing_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- index write
 			$wpdb->update( $table, $data, array( 'id' => (int) $existing_id ), $formats, array( '%d' ) );
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- index write
 			$wpdb->insert( $table, $data, $formats );
 		}
+		self::bust_indexed_count_cache();
 	}
 
 	/**

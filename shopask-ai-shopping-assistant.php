@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       WCAI – AI Shopping Assistant for WooCommerce
+ * Plugin Name:       ShopAsk AI – Shopping Assistant for WooCommerce
  * Plugin URI:        https://github.com/AmirIqbalKhan/wc-ai-shopping-assistant
  * Description:       Conversational, natural-language product finder for WooCommerce stores.
- * Version:           0.3.7
+ * Version:           0.3.8
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * WC requires at least: 8.0
@@ -12,7 +12,7 @@
  * Author URI:        https://github.com/AmirIqbalKhan
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       wc-ai-shopping-assistant
+ * Text Domain:       shopask-ai-shopping-assistant
  * Domain Path:       /languages
  * Requires Plugins:  woocommerce
  *
@@ -22,7 +22,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WCAI_VERSION', '0.3.7' );
+define( 'WCAI_VERSION', '0.3.8' );
 define( 'WCAI_PLUGIN_FILE', __FILE__ );
 define( 'WCAI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WCAI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -48,6 +48,7 @@ function wcai_autoload( string $class ): void {
 spl_autoload_register( 'wcai_autoload' );
 
 // Critical classes used during settings save / reindex — load eagerly.
+require_once WCAI_PLUGIN_DIR . 'includes/class-db.php';
 require_once WCAI_PLUGIN_DIR . 'includes/class-providers.php';
 require_once WCAI_PLUGIN_DIR . 'includes/class-local-embeddings.php';
 require_once WCAI_PLUGIN_DIR . 'includes/class-installer.php';
@@ -85,20 +86,12 @@ function wcai_requirements_met(): bool {
  */
 function wcai_requirements_notice(): void {
 	echo '<div class="notice notice-error"><p>';
-	echo esc_html__( 'WCAI – AI Shopping Assistant for WooCommerce requires PHP 8.1+ and WooCommerce 8.0+.', 'wc-ai-shopping-assistant' );
+	echo esc_html__( 'ShopAsk AI – Shopping Assistant for WooCommerce requires PHP 8.1+ and WooCommerce 8.0+.', 'shopask-ai-shopping-assistant' );
 	echo '</p></div>';
 }
 
 register_activation_hook( __FILE__, array( 'WCAI_Installer', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'WCAI_Installer', 'deactivate' ) );
-
-/**
- * Load translations.
- */
-function wcai_load_textdomain(): void {
-	load_plugin_textdomain( 'wc-ai-shopping-assistant', false, dirname( WCAI_PLUGIN_BASENAME ) . '/languages' );
-}
-add_action( 'plugins_loaded', 'wcai_load_textdomain', 1 );
 
 /**
  * Boot the plugin after plugins are loaded.

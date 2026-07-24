@@ -11,7 +11,7 @@ $failures = 0;
 $root     = dirname(__DIR__);
 
 $required = array(
-	'wc-ai-shopping-assistant.php',
+	'shopask-ai-shopping-assistant.php',
 	'includes/class-installer.php',
 	'includes/class-session.php',
 	'includes/class-settings.php',

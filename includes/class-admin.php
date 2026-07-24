@@ -107,12 +107,12 @@ class WCAI_Admin {
 				'embeddingMode'  => (string) WCAI_Settings::get( 'embedding_mode', 'auto' ),
 				'provider'       => (string) WCAI_Settings::get( 'provider', 'openai' ),
 				'i18n'           => array(
-					'testing'  => __( 'Testing...', 'wc-ai-shopping-assistant' ),
-					'testOk'   => __( 'Connection OK', 'wc-ai-shopping-assistant' ),
-					'testFail' => __( 'Connection failed', 'wc-ai-shopping-assistant' ),
+					'testing'  => __( 'Testing...', 'shopask-ai-shopping-assistant' ),
+					'testOk'   => __( 'Connection OK', 'shopask-ai-shopping-assistant' ),
+					'testFail' => __( 'Connection failed', 'shopask-ai-shopping-assistant' ),
 					/* translators: 1: done count, 2: total count, 3: status */
-					'progress' => __( 'Progress: %1$d / %2$d (%3$s)', 'wc-ai-shopping-assistant' ),
-					'custom'   => __( '- Custom / other -', 'wc-ai-shopping-assistant' ),
+					'progress' => __( 'Progress: %1$d / %2$d (%3$s)', 'shopask-ai-shopping-assistant' ),
+					'custom'   => __( '- Custom / other -', 'shopask-ai-shopping-assistant' ),
 				),
 			)
 		);
@@ -125,11 +125,11 @@ class WCAI_Admin {
 	 */
 	public static function render_tabs( string $active ): void {
 		$tabs = array(
-			'settings'  => __( 'Settings', 'wc-ai-shopping-assistant' ),
-			'analytics' => __( 'Analytics', 'wc-ai-shopping-assistant' ),
-			'insights'  => __( 'Insights', 'wc-ai-shopping-assistant' ),
+			'settings'  => __( 'Settings', 'shopask-ai-shopping-assistant' ),
+			'analytics' => __( 'Analytics', 'shopask-ai-shopping-assistant' ),
+			'insights'  => __( 'Insights', 'shopask-ai-shopping-assistant' ),
 		);
-		echo '<nav class="wcai-admin-tabs" aria-label="' . esc_attr__( 'AI Assistant sections', 'wc-ai-shopping-assistant' ) . '">';
+		echo '<nav class="wcai-admin-tabs" aria-label="' . esc_attr__( 'AI Assistant sections', 'shopask-ai-shopping-assistant' ) . '">';
 		foreach ( $tabs as $id => $label ) {
 			printf(
 				'<a class="wcai-admin-tabs__item%s" href="%s">%s</a>',
@@ -159,34 +159,34 @@ class WCAI_Admin {
 		$label  = class_exists( 'WCAI_Providers' ) ? ( WCAI_Providers::get( $prov )['label'] ?? $prov ) : $prov;
 
 		$reindex_label = 'idle' === $status
-			? __( 'Idle', 'wc-ai-shopping-assistant' )
+			? __( 'Idle', 'shopask-ai-shopping-assistant' )
 			: sprintf(
 				/* translators: 1: done 2: total */
-				__( '%1$d / %2$d', 'wc-ai-shopping-assistant' ),
+				__( '%1$d / %2$d', 'shopask-ai-shopping-assistant' ),
 				$done,
 				$total
 			);
 		?>
-		<div class="wcai-status" role="region" aria-label="<?php esc_attr_e( 'Assistant status', 'wc-ai-shopping-assistant' ); ?>">
+		<div class="wcai-status" role="region" aria-label="<?php esc_attr_e( 'Assistant status', 'shopask-ai-shopping-assistant' ); ?>">
 			<div class="wcai-status__card">
-				<span class="wcai-status__label"><?php esc_html_e( 'Provider', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-status__label"><?php esc_html_e( 'Provider', 'shopask-ai-shopping-assistant' ); ?></span>
 				<strong class="wcai-status__value"><?php echo esc_html( $label ); ?></strong>
-				<span class="wcai-status__meta"><?php echo $has ? esc_html__( 'API key saved', 'wc-ai-shopping-assistant' ) : esc_html__( 'No API key', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-status__meta"><?php echo $has ? esc_html__( 'API key saved', 'shopask-ai-shopping-assistant' ) : esc_html__( 'No API key', 'shopask-ai-shopping-assistant' ); ?></span>
 			</div>
 			<div class="wcai-status__card">
-				<span class="wcai-status__label"><?php esc_html_e( 'Indexed', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-status__label"><?php esc_html_e( 'Indexed', 'shopask-ai-shopping-assistant' ); ?></span>
 				<strong class="wcai-status__value"><?php echo esc_html( (string) $indexed ); ?></strong>
-				<span class="wcai-status__meta"><?php esc_html_e( 'Catalog rows', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-status__meta"><?php esc_html_e( 'Catalog rows', 'shopask-ai-shopping-assistant' ); ?></span>
 			</div>
 			<div class="wcai-status__card">
-				<span class="wcai-status__label"><?php esc_html_e( 'Reindex', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-status__label"><?php esc_html_e( 'Reindex', 'shopask-ai-shopping-assistant' ); ?></span>
 				<strong class="wcai-status__value" id="wcai-status-reindex"><?php echo esc_html( ucfirst( $status ) ); ?></strong>
 				<span class="wcai-status__meta" id="wcai-status-reindex-meta"><?php echo esc_html( $reindex_label ); ?></span>
 			</div>
 			<div class="wcai-status__card">
-				<span class="wcai-status__label"><?php esc_html_e( 'Embeddings', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-status__label"><?php esc_html_e( 'Embeddings', 'shopask-ai-shopping-assistant' ); ?></span>
 				<strong class="wcai-status__value"><?php echo esc_html( ucfirst( $mode ) ); ?></strong>
-				<span class="wcai-status__meta"><?php esc_html_e( 'Mode', 'wc-ai-shopping-assistant' ); ?></span>
+				<span class="wcai-status__meta"><?php esc_html_e( 'Mode', 'shopask-ai-shopping-assistant' ); ?></span>
 			</div>
 		</div>
 		<?php

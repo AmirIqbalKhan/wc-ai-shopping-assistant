@@ -100,7 +100,7 @@ class WCAI_OpenAI_Client {
 		$text = trim( preg_replace( '/\s+/', ' ', $text ) ?? '' );
 
 		if ( '' === $text ) {
-			return new WP_Error( 'wcai_empty_text', __( 'Cannot embed empty text.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_empty_text', __( 'Cannot embed empty text.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		if ( self::use_local_embeddings() ) {
@@ -120,7 +120,7 @@ class WCAI_OpenAI_Client {
 
 		$api_key = WCAI_Settings::get( 'api_key' );
 		if ( empty( $api_key ) ) {
-			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		$model = WCAI_Settings::get( 'embedding_model', 'text-embedding-3-small' );
@@ -138,7 +138,7 @@ class WCAI_OpenAI_Client {
 		}
 
 		if ( empty( $response['data'][0]['embedding'] ) || ! is_array( $response['data'][0]['embedding'] ) ) {
-			return new WP_Error( 'wcai_bad_embedding', __( 'Unexpected embedding response from the API.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_bad_embedding', __( 'Unexpected embedding response from the API.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		WCAI_Usage::increment( 'embed', 1 );
@@ -173,7 +173,7 @@ class WCAI_OpenAI_Client {
 
 		$api_key = WCAI_Settings::get( 'api_key' );
 		if ( empty( $api_key ) ) {
-			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		$model = WCAI_Settings::get( 'embedding_model', 'text-embedding-3-small' );
@@ -191,7 +191,7 @@ class WCAI_OpenAI_Client {
 		}
 
 		if ( empty( $response['data'] ) || ! is_array( $response['data'] ) ) {
-			return new WP_Error( 'wcai_bad_embedding', __( 'Unexpected embedding response from the API.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_bad_embedding', __( 'Unexpected embedding response from the API.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		usort(
@@ -219,7 +219,7 @@ class WCAI_OpenAI_Client {
 	public static function chat_json( array $messages ) {
 		$api_key = WCAI_Settings::get( 'api_key' );
 		if ( empty( $api_key ) ) {
-			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_no_api_key', __( 'API key is not configured.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		$provider = self::provider();
@@ -269,12 +269,12 @@ class WCAI_OpenAI_Client {
 
 		$content = $response['choices'][0]['message']['content'] ?? '';
 		if ( ! is_string( $content ) || '' === $content ) {
-			return new WP_Error( 'wcai_empty_chat', __( 'Empty chat response from the API.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_empty_chat', __( 'Empty chat response from the API.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		$decoded = self::parse_json_content( $content );
 		if ( null === $decoded ) {
-			return new WP_Error( 'wcai_invalid_json', __( 'Chat response was not valid JSON.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_invalid_json', __( 'Chat response was not valid JSON.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		return $decoded;
@@ -308,7 +308,7 @@ class WCAI_OpenAI_Client {
 		}
 
 		if ( empty( $anth ) ) {
-			return new WP_Error( 'wcai_empty_chat', __( 'No messages to send.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_empty_chat', __( 'No messages to send.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		$body = array(
@@ -333,12 +333,12 @@ class WCAI_OpenAI_Client {
 		}
 
 		if ( '' === $content ) {
-			return new WP_Error( 'wcai_empty_chat', __( 'Empty chat response from the API.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_empty_chat', __( 'Empty chat response from the API.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		$decoded = self::parse_json_content( $content );
 		if ( null === $decoded ) {
-			return new WP_Error( 'wcai_invalid_json', __( 'Chat response was not valid JSON.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_invalid_json', __( 'Chat response was not valid JSON.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		return $decoded;
@@ -384,7 +384,7 @@ class WCAI_OpenAI_Client {
 		// OpenRouter recommends these optional headers.
 		if ( 'openrouter' === self::provider() ) {
 			$headers['HTTP-Referer'] = home_url( '/' );
-			$headers['X-Title']      = 'WCAI – AI Shopping Assistant for WooCommerce';
+			$headers['X-Title']      = 'ShopAsk AI – Shopping Assistant for WooCommerce';
 		}
 
 		return self::http_post( $url, $headers, $body );
@@ -419,7 +419,7 @@ class WCAI_OpenAI_Client {
 	 */
 	private static function http_post( string $url, array $headers, array $body ) {
 		if ( WCAI_Installer::is_blocked_url( $url ) ) {
-			return new WP_Error( 'wcai_blocked_url', __( 'API base URL points to a blocked or private host.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_blocked_url', __( 'API base URL points to a blocked or private host.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		$http = wp_safe_remote_post(
@@ -451,14 +451,14 @@ class WCAI_OpenAI_Client {
 				}
 			}
 			if ( '' === $message ) {
-				$message = sprintf( /* translators: %d: HTTP status */ __( 'API error (HTTP %d).', 'wc-ai-shopping-assistant' ), $code );
+				$message = sprintf( /* translators: %d: HTTP status */ __( 'API error (HTTP %d).', 'shopask-ai-shopping-assistant' ), $code );
 			}
 
 			return new WP_Error( 'wcai_openai_http', $message, array( 'status' => $code ) );
 		}
 
 		if ( ! is_array( $data ) ) {
-			return new WP_Error( 'wcai_openai_parse', __( 'Could not parse API response.', 'wc-ai-shopping-assistant' ) );
+			return new WP_Error( 'wcai_openai_parse', __( 'Could not parse API response.', 'shopask-ai-shopping-assistant' ) );
 		}
 
 		return $data;

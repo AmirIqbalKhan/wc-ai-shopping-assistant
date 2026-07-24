@@ -1,4 +1,4 @@
-# WCAI – AI Shopping Assistant for WooCommerce
+# ShopAsk AI – Shopping Assistant for WooCommerce
 
 A WordPress/WooCommerce plugin that adds a conversational, natural-language product finder to any store. Shoppers describe what they want in plain English ("something for a rainy hike under $80") and get grounded, real-time product recommendations pulled directly from the store's live catalog.
 
@@ -35,7 +35,7 @@ See `ARCHITECTURE.md` for the full technical design and `AGENT_DESIGN.md` for ho
 
 ## Installation (MVP / development)
 
-1. Clone or copy the plugin into `wp-content/plugins/wc-ai-shopping-assistant`
+1. Clone or copy the plugin into `wp-content/plugins/shopask-ai-shopping-assistant`
 2. Activate the plugin from the WordPress admin Plugins screen
 3. Go to **WooCommerce → AI Assistant → Settings** and add your AI provider API key
 4. Trigger the initial catalog index from the settings screen (**Reindex Catalog**), or let it run automatically on first activation
@@ -44,8 +44,8 @@ See `ARCHITECTURE.md` for the full technical design and `AGENT_DESIGN.md` for ho
 ## Project structure (proposed)
 
 ```
-wc-ai-shopping-assistant/
-├── wc-ai-shopping-assistant.php     # Plugin bootstrap
+shopask-ai-shopping-assistant/
+├── shopask-ai-shopping-assistant.php     # Plugin bootstrap
 ├── includes/
 │   ├── class-indexer.php            # Catalog indexing + embedding generation
 │   ├── class-hooks.php              # WooCommerce hook listeners

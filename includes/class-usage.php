@@ -110,6 +110,17 @@ class WCAI_Usage {
 	}
 
 	/**
+	 * Cache key for a usage counter.
+	 *
+	 * @param string $counter Counter name.
+	 * @param string $period  Period key.
+	 * @return string
+	 */
+	private static function cache_key( string $counter, string $period ): string {
+		return 'usage_' . $counter . '_' . $period;
+	}
+
+	/**
 	 * Read counter.
 	 *
 	 * @param string $counter Counter name.
@@ -117,26 +128,38 @@ class WCAI_Usage {
 	 * @return int
 	 */
 	private static function get_count( string $counter, string $period ): int {
+		$cache_key = self::cache_key( $counter, $period );
+		$cached    = WCAI_DB::cache_get( $cache_key );
+		if ( false !== $cached ) {
+			return (int) $cached;
+		}
+
 		global $wpdb;
 		$table = WCAI_Installer::usage_counters_table();
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cached above
 		$val = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT hit_count FROM {$table} WHERE counter_key = %s AND period_key = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'SELECT hit_count FROM %i WHERE counter_key = %s AND period_key = %s',
+				$table,
 				$counter,
 				$period
 			)
 		);
 		if ( null !== $val ) {
-			return (int) $val;
+			$count = (int) $val;
+			WCAI_DB::cache_set( $cache_key, $count, 30 );
+			return $count;
 		}
 
 		if ( 'query_month' === $counter ) {
 			$data = get_option( 'wcai_usage', array() );
 			if ( is_array( $data ) && ( $data['month'] ?? '' ) === $period ) {
-				return (int) ( $data['count'] ?? 0 );
+				$count = (int) ( $data['count'] ?? 0 );
+				WCAI_DB::cache_set( $cache_key, $count, 30 );
+				return $count;
 			}
 		}
+		WCAI_DB::cache_set( $cache_key, 0, 30 );
 		return 0;
 	}
 
@@ -151,16 +174,18 @@ class WCAI_Usage {
 		global $wpdb;
 		$table = WCAI_Installer::usage_counters_table();
 		$n     = max( 1, $n );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write path
 		$wpdb->query(
 			$wpdb->prepare(
-				"INSERT INTO {$table} (counter_key, period_key, hit_count) VALUES (%s, %s, %d)
-				ON DUPLICATE KEY UPDATE hit_count = hit_count + VALUES(hit_count)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'INSERT INTO %i (counter_key, period_key, hit_count) VALUES (%s, %s, %d)
+				ON DUPLICATE KEY UPDATE hit_count = hit_count + VALUES(hit_count)',
+				$table,
 				$counter,
 				$period,
 				$n
 			)
 		);
+		WCAI_DB::cache_delete( self::cache_key( $counter, $period ) );
 	}
 
 	/**
@@ -179,7 +204,7 @@ class WCAI_Usage {
 			if ( $daily > 0 && self::used_today() >= $daily ) {
 				return new WP_Error(
 					'wcai_daily_limit',
-					__( 'The store’s daily AI assistant query limit has been reached. Please try again tomorrow.', 'wc-ai-shopping-assistant' ),
+					__( 'The store’s daily AI assistant query limit has been reached. Please try again tomorrow.', 'shopask-ai-shopping-assistant' ),
 					array( 'status' => 429 )
 				);
 			}
@@ -187,7 +212,7 @@ class WCAI_Usage {
 			if ( $monthly > 0 && self::used() >= $monthly ) {
 				return new WP_Error(
 					'wcai_monthly_limit',
-					__( 'The store’s monthly AI assistant query limit has been reached.', 'wc-ai-shopping-assistant' ),
+					__( 'The store’s monthly AI assistant query limit has been reached.', 'shopask-ai-shopping-assistant' ),
 					array( 'status' => 429 )
 				);
 			}

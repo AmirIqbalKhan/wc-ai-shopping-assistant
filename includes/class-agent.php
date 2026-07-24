@@ -25,9 +25,9 @@ class WCAI_Agent {
 
 		if ( empty( $candidates ) ) {
 			$out = array(
-				'reply_text'          => __( "I couldn't find strong matches for that in this store's catalog. Try broadening your search or adjusting the budget.", 'wc-ai-shopping-assistant' ),
+				'reply_text'          => __( "I couldn't find strong matches for that in this store's catalog. Try broadening your search or adjusting the budget.", 'shopask-ai-shopping-assistant' ),
 				'products'            => array(),
-				'clarifying_question' => __( 'Would you like to try a different category or price range?', 'wc-ai-shopping-assistant' ),
+				'clarifying_question' => __( 'Would you like to try a different category or price range?', 'shopask-ai-shopping-assistant' ),
 				'constraints'         => self::extract_constraints_heuristic( $query, $session['constraints'] ?? array() ),
 				'ab_variant'          => $variant,
 			);
@@ -120,7 +120,7 @@ class WCAI_Agent {
 		$result['ab_variant'] = $variant;
 
 		if ( (int) ( $session['turn_count'] ?? 0 ) >= 4 && empty( $result['products'] ) && empty( $result['clarifying_question'] ) ) {
-			$result['clarifying_question'] = __( 'Would you like help narrowing this down by budget, category, or size?', 'wc-ai-shopping-assistant' );
+			$result['clarifying_question'] = __( 'Would you like help narrowing this down by budget, category, or size?', 'shopask-ai-shopping-assistant' );
 		}
 
 		return $result;
@@ -217,7 +217,7 @@ class WCAI_Agent {
 		}
 
 		if ( '' === $reply && empty( $products_out ) ) {
-			$reply = __( 'I could not find a good match. Try refining your request.', 'wc-ai-shopping-assistant' );
+			$reply = __( 'I could not find a good match. Try refining your request.', 'shopask-ai-shopping-assistant' );
 		}
 
 		return array(

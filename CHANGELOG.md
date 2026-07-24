@@ -1,8 +1,14 @@
 # Changelog
 
+## 0.3.8
+
+- Trademark-safe rename: **ShopAsk AI – Shopping Assistant for WooCommerce** (`shopask-ai-shopping-assistant` slug / text domain / main file)
+- Plugin Check: `block.json` apiVersion 3, remove `load_plugin_textdomain` and `languages/.gitkeep`, Tested up to 7.0
+- DB hardening: table whitelist helper, `$wpdb->prepare` `%i` identifiers, object-cache for usage / rate-limit / analytics / indexed-count reads
+
 ## 0.3.7
 
-- Rename display title for WordPress.org Guideline 17: **WCAI – AI Shopping Assistant for WooCommerce** (WooCommerce at the end; independent plugin, not affiliated with Automattic/WooCommerce). Slug unchanged.
+- Guideline 17 display-title pass (superseded by 0.3.8 ShopAsk branding)
 
 ## 0.3.6
 

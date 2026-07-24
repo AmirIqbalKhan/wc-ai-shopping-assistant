@@ -26,8 +26,8 @@ class WCAI_Privacy {
 	 * @return array
 	 */
 	public static function register_exporter( array $exporters ): array {
-		$exporters['wc-ai-shopping-assistant'] = array(
-			'exporter_friendly_name' => __( 'WCAI – AI Shopping Assistant for WooCommerce', 'wc-ai-shopping-assistant' ),
+		$exporters['shopask-ai-shopping-assistant'] = array(
+			'exporter_friendly_name' => __( 'ShopAsk AI – Shopping Assistant for WooCommerce', 'shopask-ai-shopping-assistant' ),
 			'callback'               => array( __CLASS__, 'export' ),
 		);
 		return $exporters;
@@ -38,8 +38,8 @@ class WCAI_Privacy {
 	 * @return array
 	 */
 	public static function register_eraser( array $erasers ): array {
-		$erasers['wc-ai-shopping-assistant'] = array(
-			'eraser_friendly_name' => __( 'WCAI – AI Shopping Assistant for WooCommerce', 'wc-ai-shopping-assistant' ),
+		$erasers['shopask-ai-shopping-assistant'] = array(
+			'eraser_friendly_name' => __( 'ShopAsk AI – Shopping Assistant for WooCommerce', 'shopask-ai-shopping-assistant' ),
 			'callback'             => array( __CLASS__, 'eraser' ),
 		);
 		return $erasers;
@@ -54,9 +54,9 @@ class WCAI_Privacy {
 		}
 		$content = __(
 			'When you use the on-site AI shopping assistant, your search text (up to 500 characters) and a session token may be stored in this site’s database for analytics for up to 90 days. The same search text, together with short product catalog snippets (titles and descriptions), may be sent to the AI provider configured by the store owner (for example OpenAI, Anthropic Claude, Google Gemini, LongCat, OpenRouter, or a custom API base URL) so the assistant can return product recommendations. Catalog indexing may also send product titles and descriptions to that provider to create search embeddings. If the store owner enables an optional webhook, search-related data may be sent to the HTTPS URL they configure. Recommendations are limited to products in the store catalog. This plugin does not send data to the plugin author’s servers.',
-			'wc-ai-shopping-assistant'
+			'shopask-ai-shopping-assistant'
 		);
-		wp_add_privacy_policy_content( 'WCAI – AI Shopping Assistant for WooCommerce', wp_kses_post( wpautop( $content ) ) );
+		wp_add_privacy_policy_content( 'ShopAsk AI – Shopping Assistant for WooCommerce', wp_kses_post( wpautop( $content ) ) );
 	}
 
 	/**
@@ -86,9 +86,11 @@ class WCAI_Privacy {
 
 		global $wpdb;
 		$qtable = WCAI_Installer::query_log_table();
-		$rows   = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- privacy export one-off
+		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT query_text, created_at FROM {$qtable} WHERE session_token = %s ORDER BY id DESC LIMIT 500", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'SELECT query_text, created_at FROM %i WHERE session_token = %s ORDER BY id DESC LIMIT 500',
+				$qtable,
 				$token
 			),
 			ARRAY_A
@@ -97,7 +99,7 @@ class WCAI_Privacy {
 		$export = array();
 		foreach ( $rows as $row ) {
 			$export[] = array(
-				'name'  => __( 'AI assistant query', 'wc-ai-shopping-assistant' ),
+				'name'  => __( 'AI assistant query', 'shopask-ai-shopping-assistant' ),
 				'value' => (string) $row['query_text'] . ' @ ' . (string) $row['created_at'],
 			);
 		}
@@ -107,8 +109,8 @@ class WCAI_Privacy {
 				? array(
 					array(
 						'group_id'          => 'wcai',
-						'group_label'       => __( 'AI Shopping Assistant', 'wc-ai-shopping-assistant' ),
-						'group_description' => __( 'Queries submitted to the shopping assistant.', 'wc-ai-shopping-assistant' ),
+						'group_label'       => __( 'AI Shopping Assistant', 'shopask-ai-shopping-assistant' ),
+						'group_description' => __( 'Queries submitted to the shopping assistant.', 'shopask-ai-shopping-assistant' ),
 						'item_id'           => 'wcai-queries',
 						'data'              => $export,
 					),
@@ -150,16 +152,16 @@ class WCAI_Privacy {
 		global $wpdb;
 		$qtable = WCAI_Installer::query_log_table();
 		$ctable = WCAI_Installer::click_log_table();
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$ctable} WHERE session_token = %s", $token ) );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$qtable} WHERE session_token = %s", $token ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- privacy erase
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE session_token = %s', $ctable, $token ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- privacy erase
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE session_token = %s', $qtable, $token ) );
 		delete_user_meta( $user->ID, 'wcai_session_token' );
 
 		return array(
 			'items_removed'  => true,
 			'items_retained' => false,
-			'messages'       => array( __( 'AI assistant query and click logs removed for this user session.', 'wc-ai-shopping-assistant' ) ),
+			'messages'       => array( __( 'AI assistant query and click logs removed for this user session.', 'shopask-ai-shopping-assistant' ) ),
 			'done'           => true,
 		);
 	}

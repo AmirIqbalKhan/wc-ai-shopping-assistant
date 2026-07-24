@@ -1,4 +1,4 @@
-# WCAI – AI Shopping Assistant for WooCommerce
+# ShopAsk AI – Shopping Assistant for WooCommerce
 
 A WordPress / WooCommerce plugin that adds a conversational product finder to your store. Shoppers describe what they want in plain language — *“something for a rainy hike under $80”* — and get grounded recommendations from your **live catalog**, with explainable match reasons and working product links.
 
@@ -69,7 +69,7 @@ Choose your chat provider from settings:
 
 1. Download the latest release ZIP (or zip the plugin folder).
 2. In WP Admin go to **Plugins → Add New → Upload Plugin**.
-3. Upload `wc-ai-shopping-assistant.zip`, install, and activate.
+3. Upload `shopask-ai-shopping-assistant.zip`, install, and activate.
 4. Open **WooCommerce → AI Assistant**.
 5. Select your **AI provider**, paste the **API key**, confirm model + base URL.
 6. Click **Reindex Catalog** and wait for the progress bar to finish.
@@ -279,8 +279,8 @@ add_action( 'wcai_query_completed', function ( $payload ) {
 ## Project structure
 
 ```
-wc-ai-shopping-assistant/
-├── wc-ai-shopping-assistant.php   # Bootstrap
+shopask-ai-shopping-assistant/
+├── shopask-ai-shopping-assistant.php   # Bootstrap
 ├── includes/                      # PHP classes (indexer, agent, REST, analytics, …)
 ├── assets/                        # Icons, storefront widget + admin UI
 │   ├── icon-128x128.png           # WordPress.org plugin icon

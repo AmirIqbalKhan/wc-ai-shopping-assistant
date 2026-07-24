@@ -1,10 +1,10 @@
-=== WCAI – AI Shopping Assistant for WooCommerce ===
+=== ShopAsk AI – Shopping Assistant for WooCommerce ===
 Contributors: amiriqbalkhan
 Tags: woocommerce, ai, search, shopping assistant, product finder
 Requires at least: 6.4
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.3.7
+Stable tag: 0.3.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Conversational, natural-language product finder for WooCommerce stores. Grounded
 
 == Description ==
 
-WCAI – AI Shopping Assistant for WooCommerce lets shoppers describe what they want in plain language and receive product recommendations from your **live catalog**, with match reasons and working product links.
+ShopAsk AI – Shopping Assistant for WooCommerce lets shoppers describe what they want in plain language and receive product recommendations from your **live catalog**, with match reasons and working product links.
 
 This plugin is an independent product and is not affiliated with or endorsed by Automattic or WooCommerce.
 
@@ -72,8 +72,13 @@ Yes. Enable white-label in **WooCommerce → AI Assistant → Settings**.
 
 == Changelog ==
 
+= 0.3.8 =
+* Trademark-safe rename: ShopAsk AI – Shopping Assistant for WooCommerce (slug shopask-ai-shopping-assistant)
+* Plugin Check: block apiVersion 3, remove load_plugin_textdomain / languages .gitkeep, Tested up to 7.0
+* Harden custom-table SQL with %i identifiers, table whitelist, and object-cache for hot reads
+
 = 0.3.7 =
-* Rename display title for WordPress.org Guideline 17: WCAI – AI Shopping Assistant for WooCommerce (independent; not affiliated with Automattic/WooCommerce)
+* Rename display title for WordPress.org Guideline 17 (superseded by 0.3.8 ShopAsk branding)
 
 = 0.3.6 =
 * WordPress.org readiness: readme.txt, External services disclosure, self-hosted Outfit fonts

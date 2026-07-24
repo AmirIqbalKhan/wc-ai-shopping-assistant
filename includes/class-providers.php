@@ -29,7 +29,7 @@ class WCAI_Providers {
 	public static function all(): array {
 		return array(
 			'openai'     => array(
-				'label'             => __( 'OpenAI', 'wc-ai-shopping-assistant' ),
+				'label'             => __( 'OpenAI', 'shopask-ai-shopping-assistant' ),
 				'api_base'          => 'https://api.openai.com/v1',
 				'api_style'         => 'openai',
 				'local_embeddings'  => false,
@@ -46,10 +46,10 @@ class WCAI_Providers {
 					'text-embedding-3-large' => 'text-embedding-3-large',
 				),
 				'default_embedding' => 'text-embedding-3-small',
-				'key_hint'          => __( 'sk-… from platform.openai.com', 'wc-ai-shopping-assistant' ),
+				'key_hint'          => __( 'sk-… from platform.openai.com', 'shopask-ai-shopping-assistant' ),
 			),
 			'claude'     => array(
-				'label'             => __( 'Claude (Anthropic)', 'wc-ai-shopping-assistant' ),
+				'label'             => __( 'Claude (Anthropic)', 'shopask-ai-shopping-assistant' ),
 				'api_base'          => 'https://api.anthropic.com/v1',
 				'api_style'         => 'anthropic',
 				'local_embeddings'  => true,
@@ -63,10 +63,10 @@ class WCAI_Providers {
 				'default_chat'      => 'claude-sonnet-4-5',
 				'embedding_models'  => array(),
 				'default_embedding' => '',
-				'key_hint'          => __( 'sk-ant-… from console.anthropic.com', 'wc-ai-shopping-assistant' ),
+				'key_hint'          => __( 'sk-ant-… from console.anthropic.com', 'shopask-ai-shopping-assistant' ),
 			),
 			'gemini'     => array(
-				'label'             => __( 'Gemini (Google)', 'wc-ai-shopping-assistant' ),
+				'label'             => __( 'Gemini (Google)', 'shopask-ai-shopping-assistant' ),
 				'api_base'          => 'https://generativelanguage.googleapis.com/v1beta/openai',
 				'api_style'         => 'openai',
 				'local_embeddings'  => false,
@@ -83,10 +83,10 @@ class WCAI_Providers {
 					'gemini-embedding-001' => 'gemini-embedding-001',
 				),
 				'default_embedding' => 'text-embedding-004',
-				'key_hint'          => __( 'AIza… from Google AI Studio', 'wc-ai-shopping-assistant' ),
+				'key_hint'          => __( 'AIza… from Google AI Studio', 'shopask-ai-shopping-assistant' ),
 			),
 			'longcat'    => array(
-				'label'             => __( 'LongCat Chat', 'wc-ai-shopping-assistant' ),
+				'label'             => __( 'LongCat Chat', 'shopask-ai-shopping-assistant' ),
 				'api_base'          => 'https://api.longcat.chat/openai/v1',
 				'api_style'         => 'openai',
 				'local_embeddings'  => true,
@@ -99,10 +99,10 @@ class WCAI_Providers {
 				'default_chat'      => 'LongCat-2.0',
 				'embedding_models'  => array(),
 				'default_embedding' => '',
-				'key_hint'          => __( 'App key from longcat.chat/platform — OpenAI-compat base ends with /openai/v1', 'wc-ai-shopping-assistant' ),
+				'key_hint'          => __( 'App key from longcat.chat/platform — OpenAI-compat base ends with /openai/v1', 'shopask-ai-shopping-assistant' ),
 			),
 			'openrouter' => array(
-				'label'             => __( 'OpenRouter', 'wc-ai-shopping-assistant' ),
+				'label'             => __( 'OpenRouter', 'shopask-ai-shopping-assistant' ),
 				'api_base'          => 'https://openrouter.ai/api/v1',
 				'api_style'         => 'openai',
 				'local_embeddings'  => false,
@@ -121,10 +121,10 @@ class WCAI_Providers {
 					'openai/text-embedding-3-small' => 'OpenAI text-embedding-3-small',
 				),
 				'default_embedding' => 'openai/text-embedding-3-small',
-				'key_hint'          => __( 'sk-or-… from openrouter.ai', 'wc-ai-shopping-assistant' ),
+				'key_hint'          => __( 'sk-or-… from openrouter.ai', 'shopask-ai-shopping-assistant' ),
 			),
 			'custom'     => array(
-				'label'             => __( 'Custom (OpenAI-compatible)', 'wc-ai-shopping-assistant' ),
+				'label'             => __( 'Custom (OpenAI-compatible)', 'shopask-ai-shopping-assistant' ),
 				'api_base'          => '',
 				'api_style'         => 'openai',
 				'local_embeddings'  => false,
@@ -132,7 +132,7 @@ class WCAI_Providers {
 				'default_chat'      => '',
 				'embedding_models'  => array(),
 				'default_embedding' => '',
-				'key_hint'          => __( 'Your provider API key', 'wc-ai-shopping-assistant' ),
+				'key_hint'          => __( 'Your provider API key', 'shopask-ai-shopping-assistant' ),
 			),
 		);
 	}

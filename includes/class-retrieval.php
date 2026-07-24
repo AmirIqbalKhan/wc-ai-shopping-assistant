@@ -22,7 +22,7 @@ class WCAI_Retrieval {
 	public static function search( string $query, array $session = array() ) {
 		$query = trim( wp_strip_all_tags( $query ) );
 		if ( '' === $query ) {
-			return new WP_Error( 'wcai_empty_query', __( 'Query cannot be empty.', 'wc-ai-shopping-assistant' ), array( 'status' => 400 ) );
+			return new WP_Error( 'wcai_empty_query', __( 'Query cannot be empty.', 'shopask-ai-shopping-assistant' ), array( 'status' => 400 ) );
 		}
 
 		$constraints = WCAI_Agent::extract_constraints_heuristic(
@@ -148,16 +148,16 @@ class WCAI_Retrieval {
 			$ft_params = array_merge( $params, array( $ft_terms ) );
 			$sql = "SELECT product_id, variation_id, title, price, stock_status, category_names, attributes_json, embedding, product_url,
 				MATCH(summary_text) AGAINST (%s IN BOOLEAN MODE) AS ft_score
-				FROM {$table}
+				FROM %i
 				WHERE {$ft_where}
 				ORDER BY ft_score DESC
 				LIMIT %d";
-			// AGAINST appears twice — bind query terms twice + limit.
-			$bind = array_merge( array( $ft_terms ), $ft_params, array( $limit ) );
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// Table + AGAINST (twice) + where params + limit.
+			$bind = array_merge( array( $table, $ft_terms ), $ft_params, array( $limit ) );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- dynamic WHERE clauses use placeholders
 			$prepared = $wpdb->prepare( $sql, $bind );
 			if ( $prepared ) {
-				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- retrieval hot path
 				$rows = $wpdb->get_results( $prepared, ARRAY_A ) ?: array();
 			}
 		}
@@ -165,26 +165,27 @@ class WCAI_Retrieval {
 		if ( count( $rows ) < 10 ) {
 			// Metadata only — avoid filesorting/loading LONGBLOB embeddings in the first pass.
 			$sql = "SELECT id, product_id, variation_id, title, price, stock_status, category_names, attributes_json, product_url
-				FROM {$table}
+				FROM %i
 				WHERE {$where_sql}
 				ORDER BY last_indexed_at DESC
 				LIMIT %d";
-			$bind = array_merge( $params, array( $limit ) );
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$bind = array_merge( array( $table ), $params, array( $limit ) );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- dynamic WHERE clauses use placeholders
 			$prepared = $wpdb->prepare( $sql, $bind );
 			$fallback = array();
 			if ( $prepared ) {
-				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- retrieval hot path
 				$meta_rows = $wpdb->get_results( $prepared, ARRAY_A ) ?: array();
 				$ids       = array_filter( array_map( 'intval', array_column( $meta_rows, 'id' ) ) );
 				$emb_map   = array();
 				if ( $ids ) {
 					$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-					$emb_sql      = "SELECT id, embedding FROM {$table} WHERE id IN ({$placeholders})";
-					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$emb_prepared = $wpdb->prepare( $emb_sql, $ids );
+					$emb_sql      = "SELECT id, embedding FROM %i WHERE id IN ({$placeholders})";
+					$emb_bind     = array_merge( array( $table ), $ids );
+					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- dynamic IN list
+					$emb_prepared = $wpdb->prepare( $emb_sql, $emb_bind );
 					if ( $emb_prepared ) {
-						// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+						// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- retrieval hot path
 						foreach ( ( $wpdb->get_results( $emb_prepared, ARRAY_A ) ?: array() ) as $erow ) {
 							$emb_map[ (int) $erow['id'] ] = $erow['embedding'];
 						}

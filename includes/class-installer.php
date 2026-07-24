@@ -96,6 +96,7 @@ class WCAI_Installer {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		$index = self::table_name();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- dbDelta DDL
 		dbDelta(
 			"CREATE TABLE {$index} (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -197,15 +198,18 @@ class WCAI_Installer {
 	public static function maybe_add_fulltext(): void {
 		global $wpdb;
 		$table = self::table_name();
+		if ( '' === $table ) {
+			return;
+		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$exists = $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'summary_ft'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- schema introspection
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW INDEX FROM %i WHERE Key_name = %s', $table, 'summary_ft' ) );
 		if ( $exists ) {
 			return;
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
-		$wpdb->query( "ALTER TABLE {$table} ADD FULLTEXT summary_ft (summary_text)" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DDL
+		$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD FULLTEXT summary_ft (summary_text)', $table ) );
 	}
 
 	/**
@@ -214,28 +218,31 @@ class WCAI_Installer {
 	public static function maybe_add_indexes(): void {
 		global $wpdb;
 		$table = self::table_name();
+		if ( '' === $table ) {
+			return;
+		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$idx = $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'last_indexed_at'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- schema introspection
+		$idx = $wpdb->get_var( $wpdb->prepare( 'SHOW INDEX FROM %i WHERE Key_name = %s', $table, 'last_indexed_at' ) );
 		if ( ! $idx ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( "ALTER TABLE {$table} ADD KEY last_indexed_at (last_indexed_at)" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DDL
+			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD KEY last_indexed_at (last_indexed_at)', $table ) );
 		}
 
 		$qtable = self::query_log_table();
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$col = $wpdb->get_results( "SHOW COLUMNS FROM {$qtable} LIKE 'result_product_ids'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- schema introspection
+		$col = $wpdb->get_results( $wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $qtable, 'result_product_ids' ) );
 		if ( empty( $col ) ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( "ALTER TABLE {$qtable} ADD COLUMN result_product_ids LONGTEXT NULL AFTER result_count" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DDL
+			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN result_product_ids LONGTEXT NULL AFTER result_count', $qtable ) );
 		}
 
 		$ctable = self::click_log_table();
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$uq = $wpdb->get_var( "SHOW INDEX FROM {$ctable} WHERE Key_name = 'query_product'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- schema introspection
+		$uq = $wpdb->get_var( $wpdb->prepare( 'SHOW INDEX FROM %i WHERE Key_name = %s', $ctable, 'query_product' ) );
 		if ( ! $uq ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( "ALTER TABLE {$ctable} ADD UNIQUE KEY query_product (query_id, product_id)" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DDL
+			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD UNIQUE KEY query_product (query_id, product_id)', $ctable ) );
 		}
 	}
 
@@ -384,37 +391,31 @@ class WCAI_Installer {
 
 	/** @return string */
 	public static function table_name(): string {
-		global $wpdb;
-		return $wpdb->prefix . 'ai_product_index';
+		return WCAI_DB::table( 'product_index' );
 	}
 
 	/** @return string */
 	public static function sessions_table(): string {
-		global $wpdb;
-		return $wpdb->prefix . 'ai_chat_sessions';
+		return WCAI_DB::table( 'sessions' );
 	}
 
 	/** @return string */
 	public static function query_log_table(): string {
-		global $wpdb;
-		return $wpdb->prefix . 'ai_query_log';
+		return WCAI_DB::table( 'query_log' );
 	}
 
 	/** @return string */
 	public static function click_log_table(): string {
-		global $wpdb;
-		return $wpdb->prefix . 'ai_click_log';
+		return WCAI_DB::table( 'click_log' );
 	}
 
 	/** @return string */
 	public static function rate_limits_table(): string {
-		global $wpdb;
-		return $wpdb->prefix . 'ai_rate_limits';
+		return WCAI_DB::table( 'rate_limits' );
 	}
 
 	/** @return string */
 	public static function usage_counters_table(): string {
-		global $wpdb;
-		return $wpdb->prefix . 'ai_usage_counters';
+		return WCAI_DB::table( 'usage_counters' );
 	}
 }

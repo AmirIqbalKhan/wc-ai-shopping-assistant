@@ -9,21 +9,17 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 global $wpdb;
 
-$tables = array(
-	$wpdb->prefix . 'ai_product_index',
-	$wpdb->prefix . 'ai_chat_sessions',
-	$wpdb->prefix . 'ai_query_log',
-	$wpdb->prefix . 'ai_click_log',
-	$wpdb->prefix . 'ai_rate_limits',
-	$wpdb->prefix . 'ai_usage_counters',
-);
+$shopask_plugin_dir = plugin_dir_path( __FILE__ );
+require_once $shopask_plugin_dir . 'includes/class-db.php';
 
-foreach ( $tables as $table ) {
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery
-	$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+$shopask_tables = WCAI_DB::all_tables();
+
+foreach ( $shopask_tables as $shopask_table ) {
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- uninstall DROP
+	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $shopask_table ) );
 }
 
-$options = array(
+$shopask_options = array(
 	'wcai_settings',
 	'wcai_secrets',
 	'wcai_usage',
@@ -32,22 +28,29 @@ $options = array(
 	'wcai_rate_limit_keys',
 );
 
-foreach ( $options as $option ) {
-	delete_option( $option );
+foreach ( $shopask_options as $shopask_option ) {
+	delete_option( $shopask_option );
 }
 
 // Session tokens stored on users for privacy export/erase.
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'wcai_session_token'" );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- uninstall cleanup
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE meta_key = %s', $wpdb->usermeta, 'wcai_session_token' ) );
 
 // Debounce transients from product hooks.
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_wcai_debounce_%' OR option_name LIKE '_transient_timeout_wcai_debounce_%'" );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- uninstall cleanup
+$wpdb->query(
+	$wpdb->prepare(
+		'DELETE FROM %i WHERE option_name LIKE %s OR option_name LIKE %s',
+		$wpdb->options,
+		$wpdb->esc_like( '_transient_wcai_debounce_' ) . '%',
+		$wpdb->esc_like( '_transient_timeout_wcai_debounce_' ) . '%'
+	)
+);
 
 // Pending Action Scheduler jobs in the wcai group.
 if ( function_exists( 'as_unschedule_all_actions' ) ) {
-	foreach ( array( 'wcai_reindex_batch', 'wcai_reindex_product', 'wcai_remove_product', 'wcai_update_stock' ) as $hook ) {
-		as_unschedule_all_actions( $hook, array(), 'wcai' );
+	foreach ( array( 'wcai_reindex_batch', 'wcai_reindex_product', 'wcai_remove_product', 'wcai_update_stock' ) as $shopask_hook ) {
+		as_unschedule_all_actions( $shopask_hook, array(), 'wcai' );
 	}
 }
 
